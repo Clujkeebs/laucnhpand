@@ -5,7 +5,6 @@ export type Network = "mainnet-beta" | "devnet";
 const NETWORK_KEY = "launchpad.network";
 
 export const WSOL_MINT = new PublicKey("So11111111111111111111111111111111111111112");
-export const LAMPORTS_PER_SOL_DECIMALS = 9;
 
 /**
  * Public RPC endpoints are heavily rate-limited and will fail under real use.

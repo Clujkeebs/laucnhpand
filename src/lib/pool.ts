@@ -155,34 +155,6 @@ export async function lockLiquidity(
   return txId;
 }
 
-export type PoolSummary = {
-  poolId: string;
-  mintA: string;
-  mintB: string;
-  price: number;
-  tvl: number;
-  lpMint: string;
-  lpAmount: number;
-};
-
-export async function fetchPool(
-  network: Network,
-  owner: Keypair,
-  poolId: string,
-): Promise<PoolSummary> {
-  const raydium = await loadRaydium(network, owner);
-  const { poolInfo } = await raydium.cpmm.getPoolInfoFromRpc(poolId);
-  return {
-    poolId,
-    mintA: poolInfo.mintA.address,
-    mintB: poolInfo.mintB.address,
-    price: poolInfo.price,
-    tvl: poolInfo.tvl,
-    lpMint: poolInfo.lpMint.address,
-    lpAmount: poolInfo.lpAmount,
-  };
-}
-
 export function isValidMint(value: string): boolean {
   try {
     new PublicKey(value);

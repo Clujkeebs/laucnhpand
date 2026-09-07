@@ -36,9 +36,3 @@ export function updateLaunch(mint: string, patch: Partial<LaunchRecord>): void {
   window.localStorage.setItem(KEY, JSON.stringify(updated));
 }
 
-export function forgetLaunch(mint: string): void {
-  window.localStorage.setItem(
-    KEY,
-    JSON.stringify(listLaunches().filter((entry) => entry.mint !== mint)),
-  );
-}

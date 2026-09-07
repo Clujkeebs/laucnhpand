@@ -17,7 +17,6 @@ import {
 import {
   AuthorityType,
   createSetAuthorityInstruction,
-  getAssociatedTokenAddressSync,
   MINT_SIZE,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
@@ -236,6 +235,3 @@ export async function fetchMintStatus(
   return status;
 }
 
-export function associatedTokenAddress(mint: string, owner: string): string {
-  return getAssociatedTokenAddressSync(new PublicKey(mint), new PublicKey(owner)).toBase58();
-}
