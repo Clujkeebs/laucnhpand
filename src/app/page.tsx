@@ -9,6 +9,7 @@ import { explorerUrl, shortAddress } from "@/lib/solana";
 import { fetchPortfolio, type Portfolio } from "@/lib/portfolio";
 import { listLaunches, type LaunchRecord } from "@/lib/history";
 import { Reclaim } from "@/components/Reclaim";
+import { StartHere } from "@/components/StartHere";
 
 const usd = (value: number | null) =>
   value === null
@@ -40,30 +41,12 @@ export default function DashboardPage() {
 
   if (!ready) return null;
 
-  if (!keystore) {
-    return (
-      <Shell
-        title="No wallet yet"
-        standfirst="Everything here signs with a key held in this browser. Create one, then run a full issuance on the test network before you touch the live one."
-      >
-        <div className="max-w-xl">
-          <Panel index="01" eyebrow="First step" title="Set up custody">
-            <p className="mb-6 text-[13.5px] leading-relaxed text-ink-soft">
-              The key is generated locally and encrypted with a passphrase only you hold. It never
-              reaches the server, and there is no recovery — which is the trade for nobody else
-              having it.
-            </p>
-            <Link href="/wallet">
-              <Button>Create a wallet</Button>
-            </Link>
-          </Panel>
-        </div>
-      </Shell>
-    );
-  }
-
   return (
     <Shell title="Ledger" standfirst={`${shortAddress(publicKey ?? "", 6)} · ${network === "devnet" ? "test network" : "live network"}`}>
+      <div className="mb-11 max-w-2xl">
+        <StartHere />
+      </div>
+
       <div className="mb-11 flex flex-wrap gap-2.5">
         <Link href="/launch">
           <Button>Issue a token</Button>

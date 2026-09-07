@@ -70,7 +70,7 @@ export function Reclaim() {
       index="—"
       eyebrow="Recovery"
       title="Locked rent"
-      note="Every token account you have ever used holds ~0.002 SOL. Empty ones can be closed and the rent returned."
+      note="Every token account you have ever used holds ~0.002 SOL as a deposit. Empty ones can be closed and that deposit returned to you."
       aside={worthIt ? <Tag tone="verify">{scan.empty.length} closable</Tag> : null}
     >
       {done ? (
@@ -109,6 +109,13 @@ export function Reclaim() {
               close positions, so it is worth checking again later.
             </Note>
           ) : null}
+
+          <Note tone="flag">
+            This gives back a deposit you already paid; it is not income. Making a coin costs
+            more rent than closing an account returns, so creating coins in order to reclaim
+            them loses money every time. Use this to recover what is stranded, not as a way
+            to earn.
+          </Note>
 
           <div className="flex flex-wrap gap-2.5">
             <Button variant="quiet" onClick={() => void rescan()} disabled={scanning}>
