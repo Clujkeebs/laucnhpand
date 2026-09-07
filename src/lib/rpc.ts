@@ -11,15 +11,44 @@
 export const PUBLIC_MAINNET = "https://api.mainnet-beta.solana.com";
 export const PUBLIC_DEVNET = "https://api.devnet.solana.com";
 
+/**
+ * Free, keyless public nodes used when nothing is configured. Several, not one:
+ * any single free endpoint will throttle, but they rarely throttle at the same
+ * moment, and reads fall through the list. This is a floor, not a substitute
+ * for a dedicated endpoint.
+ */
+export const DEFAULT_MAINNET = [
+  PUBLIC_MAINNET,
+  "https://solana-rpc.publicnode.com",
+  "https://solana.drpc.org",
+];
+
+export const DEFAULT_DEVNET = [
+  PUBLIC_DEVNET,
+  "https://solana-devnet-rpc.publicnode.com",
+];
+
 /** Parses a comma-separated endpoint list, keeping only usable http(s) URLs. */
-export function parseEndpoints(value: string | undefined, fallback: string): string[] {
+export function parseEndpoints(value: string | undefined, fallback: string | string[]): string[] {
   const parsed = (value ?? "")
     .split(",")
     .map((entry) => entry.trim())
     .filter((entry) => /^https?:\/\/\S+$/i.test(entry));
 
   const unique = [...new Set(parsed)];
-  return unique.length > 0 ? unique : [fallback];
+  if (unique.length > 0) return unique;
+  return Array.isArray(fallback) ? [...fallback] : [fallback];
+}
+
+/**
+ * True when nothing was configured, so the app is running on shared free nodes.
+ * Distinct from "only one endpoint" — a single dedicated endpoint is fine.
+ */
+export function usingDefaults(endpoints: string[], defaults: string[]): boolean {
+  return (
+    endpoints.length === defaults.length &&
+    endpoints.every((endpoint, index) => endpoint === defaults[index])
+  );
 }
 
 /** True when the endpoint list is just the rate-limited public node. */

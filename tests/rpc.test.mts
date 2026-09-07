@@ -1,19 +1,42 @@
 import assert from "node:assert/strict";
 import {
-  parseEndpoints, isPublicOnly, isTransient, backoffMs, withFallback,
-  PUBLIC_MAINNET,
+  parseEndpoints, isPublicOnly, usingDefaults, isTransient, backoffMs, withFallback,
+  PUBLIC_MAINNET, DEFAULT_MAINNET, DEFAULT_DEVNET,
 } from "../src/lib/rpc.ts";
 
 let passed = 0;
 const check = async (name: string, fn: () => unknown) => { await fn(); passed += 1; console.log(`  ok  ${name}`); };
 const noSleep = async () => {};
 
-await check("an unset variable falls back to the public node", () =>
-  assert.deepEqual(parseEndpoints(undefined, PUBLIC_MAINNET), [PUBLIC_MAINNET]));
+await check("an unset variable falls back to every default node, not just one", () => {
+  assert.deepEqual(parseEndpoints(undefined, DEFAULT_MAINNET), DEFAULT_MAINNET);
+  assert.ok(DEFAULT_MAINNET.length > 1, "a single default defeats the fallback");
+  assert.ok(DEFAULT_DEVNET.length > 1);
+});
+
+await check("the defaults are distinct, https, and lead with the canonical node", () => {
+  for (const list of [DEFAULT_MAINNET, DEFAULT_DEVNET]) {
+    assert.equal(new Set(list).size, list.length, "duplicate default endpoint");
+    assert.ok(list.every((u) => u.startsWith("https://")));
+  }
+  assert.equal(DEFAULT_MAINNET[0], PUBLIC_MAINNET);
+});
+
+await check("a configured endpoint replaces the defaults entirely", () =>
+  assert.deepEqual(parseEndpoints("https://mine.example", DEFAULT_MAINNET), ["https://mine.example"]));
+
+await check("usingDefaults distinguishes unconfigured from a single dedicated node", () => {
+  assert.equal(usingDefaults(DEFAULT_MAINNET, DEFAULT_MAINNET), true);
+  assert.equal(usingDefaults(["https://mine.example"], DEFAULT_MAINNET), false);
+  assert.equal(usingDefaults([...DEFAULT_MAINNET].reverse(), DEFAULT_MAINNET), false);
+});
 
 await check("a comma-separated list is split and trimmed", () =>
   assert.deepEqual(parseEndpoints(" https://a.co , https://b.co ", PUBLIC_MAINNET),
     ["https://a.co", "https://b.co"]));
+
+await check("a string fallback still works alongside the list form", () =>
+  assert.deepEqual(parseEndpoints(undefined, PUBLIC_MAINNET), [PUBLIC_MAINNET]));
 
 await check("duplicates are collapsed", () =>
   assert.deepEqual(parseEndpoints("https://a.co,https://a.co", PUBLIC_MAINNET), ["https://a.co"]));
