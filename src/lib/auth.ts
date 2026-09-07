@@ -49,7 +49,7 @@ export async function createSessionToken(): Promise<string> {
 }
 
 export async function verifySessionToken(token: string | undefined): Promise<boolean> {
-  if (!token) return false;
+  if (!token || !process.env.AUTH_SECRET) return false;
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return false;
   const expires = Number(payload);
