@@ -11,6 +11,7 @@ this app has no account system because it has exactly one user.
 
 | | |
 |---|---|
+| **Recovery** | Closes empty token accounts and returns the rent locked in them. The one screen that produces SOL instead of spending it. |
 | **Ledger** | Balances, USD portfolio value via Jupiter, and every token you've issued from this browser. |
 | **Studio** | Work through a token with the assistant, then have it draft one. It calls tools to model pools and fee earnings, and proposes launches you confirm. |
 | **Curve** | Issue against a Raydium LaunchLab bonding curve — no pool to fund, so the outlay is account rent. Buyers trade the curve, your share of the trade fee accrues to a vault, and you claim it. Migrates to a real pool when it raises its target. |
@@ -40,6 +41,22 @@ away from spending your wallet.
 The same refusals apply here as everywhere else in the app: it will not propose
 a token that imitates an existing one, help disguise who controls a token, plan
 a liquidity pull, or claim a token will go up.
+
+### Getting off zero
+
+Every SPL token account you have ever used locks about 0.002 SOL as rent. When
+the balance hits zero the account stays open and that rent stays locked, so a
+wallet with any trading history is usually sitting on real SOL it cannot see.
+The recovery panel on the ledger scans for those accounts, shows the total net
+of transaction fees, and closes them in batches.
+
+Accounts still holding tokens are never touched — closing one burns what is in
+it — and the reclaim path refuses outright if a non-empty account reaches it.
+
+This matters because there is no zero-cost path onto Solana: the chain charges
+rent for every account, so opening even a bonding-curve launch costs roughly
+0.02-0.03 SOL. Recovery is the only way the app can hand you SOL rather than
+ask for it.
 
 ### Automation
 
@@ -257,6 +274,8 @@ src/
     amm.ts             constant-product pool math
     agent-tools.ts     tool definitions + server-side executors
     fees.ts            creator fee economics (pure)
+    reclaim.ts         closing empty accounts on chain
+    rent.ts            rent-recovery arithmetic and safety rules (pure)
     scheduler.ts       automation config, caps, audit log
     launchpad.ts       Raydium LaunchLab bonding curve
     report.ts          token grading, planned and observed
