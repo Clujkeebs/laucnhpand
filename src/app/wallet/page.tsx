@@ -5,7 +5,14 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Shell } from "@/components/Shell";
 import { Button, Copyable, Datum, ExternalRef, Field, Note, Panel, Tag } from "@/components/ui";
 import { useWallet } from "@/lib/wallet";
-import { explorerUrl } from "@/lib/solana";
+import { explorerUrl, rpcEndpoints } from "@/lib/solana";
+import {
+  AIRDROP_AMOUNTS,
+  WEB_FAUCET,
+  explainAirdropError,
+  isRetryableAirdropError,
+} from "@/lib/faucet";
+import { Connection } from "@solana/web3.js";
 
 type Mode = "create" | "import";
 
@@ -38,6 +45,7 @@ export default function WalletPage() {
   const [revealError, setRevealError] = useState<string | null>(null);
 
   const [airdropState, setAirdropState] = useState<string | null>(null);
+  const [faucetExhausted, setFaucetExhausted] = useState(false);
 
   async function setup(event: FormEvent) {
     event.preventDefault();
@@ -75,19 +83,37 @@ export default function WalletPage() {
     }
   }
 
+  /**
+   * Walks every configured devnet endpoint, then steps the amount down. The
+   * public faucet refuses large requests long before it refuses small ones.
+   */
   async function airdrop() {
     if (!keypair) return;
     setAirdropState("requesting");
-    try {
-      const signature = await connection.requestAirdrop(keypair.publicKey, LAMPORTS_PER_SOL);
-      await connection.confirmTransaction(signature, "confirmed");
-      await refreshBalance();
-      setAirdropState("Airdrop confirmed.");
-    } catch (err) {
-      setAirdropState(
-        err instanceof Error ? err.message : "The test faucet is rate-limited. Try again shortly.",
-      );
+    setFaucetExhausted(false);
+    let last: unknown = null;
+
+    for (const amount of AIRDROP_AMOUNTS) {
+      for (const endpoint of rpcEndpoints("devnet")) {
+        try {
+          const rpc = new Connection(endpoint, "confirmed");
+          const signature = await rpc.requestAirdrop(
+            keypair.publicKey,
+            Math.round(amount * LAMPORTS_PER_SOL),
+          );
+          await rpc.confirmTransaction(signature, "confirmed");
+          await refreshBalance();
+          setAirdropState(`Received ${amount} SOL.`);
+          return;
+        } catch (err) {
+          last = err;
+          if (!isRetryableAirdropError(err)) break;
+        }
+      }
     }
+
+    setFaucetExhausted(true);
+    setAirdropState(explainAirdropError(last));
   }
 
   if (!ready) return null;
@@ -214,6 +240,28 @@ export default function WalletPage() {
             ) : null}
             {airdropState && airdropState !== "requesting" ? (
               <p className="mt-4 text-[12px] text-ink-soft">{airdropState}</p>
+            ) : null}
+
+            {faucetExhausted ? (
+              <div className="mt-5 space-y-4">
+                <Note tone="flag">
+                  This happens constantly — the public faucet is shared by everyone on devnet
+                  and is usually throttled. It is not a fault in your wallet, and it costs
+                  nothing to get test SOL another way.
+                </Note>
+                <div>
+                  <p className="eyebrow mb-1.5">Your address</p>
+                  <Copyable value={publicKey ?? ""} />
+                </div>
+                <div className="flex flex-wrap gap-5">
+                  <ExternalRef href={WEB_FAUCET}>Use the hosted faucet</ExternalRef>
+                  <ExternalRef href="https://solfaucet.com">Alternative faucet</ExternalRef>
+                </div>
+                <p className="annot">
+                  Paste the address above into either one. Test SOL is free and worthless, so
+                  any of them will do.
+                </p>
+              </div>
             ) : null}
           </Panel>
         ) : null}
