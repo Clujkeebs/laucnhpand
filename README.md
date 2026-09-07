@@ -171,7 +171,11 @@ cp .env.example .env.local   # fill in APP_PASSWORD and AUTH_SECRET
 npm run dev
 ```
 
-`AUTH_SECRET` should be random — `openssl rand -hex 32`.
+`AUTH_SECRET` should be random — `openssl rand -hex 32`. The full list of
+variables, what each unlocks, and which are required is in `.env.example`.
+Once deployed, `GET /api/diagnostics` (behind the login) reports which
+variables the running deployment actually picked up — presence only, never
+values.
 
 ### Deploying to Vercel
 
@@ -203,6 +207,12 @@ mistake you're going to make is cheaper to make on devnet.
 is aggressively rate-limited and *will* drop requests partway through a
 multi-transaction launch, leaving you with a half-created token and spent SOL.
 Helius, QuickNode and Triton all have free tiers that are fine for this.
+
+Both RPC variables accept a comma-separated list. Reads fall through the list,
+retrying rate limits and network blips with backoff before moving on; a real
+rejection (insufficient funds, a program error) aborts immediately rather than
+being retried. Transaction sends deliberately stay on a single connection, so a
+retry can never double-send.
 
 **There is no free launch.** Solana charges rent for every account you create,
 and the app shows you the real number before you sign:

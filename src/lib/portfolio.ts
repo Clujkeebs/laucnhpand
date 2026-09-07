@@ -1,6 +1,6 @@
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { rpcEndpoint, WSOL_MINT, type Network } from "./solana";
+import { readWithFallback, WSOL_MINT, type Network } from "./solana";
 
 export type Holding = {
   mint: string;
@@ -39,16 +39,17 @@ async function fetchMarketData(mints: string[]): Promise<PriceMap> {
 }
 
 export async function fetchPortfolio(network: Network, owner: string): Promise<Portfolio> {
-  const connection = new Connection(rpcEndpoint(network), "confirmed");
   const ownerKey = new PublicKey(owner);
 
-  const [lamports, standard, token2022] = await Promise.all([
-    connection.getBalance(ownerKey),
-    connection.getParsedTokenAccountsByOwner(ownerKey, { programId: TOKEN_PROGRAM_ID }),
-    connection
-      .getParsedTokenAccountsByOwner(ownerKey, { programId: TOKEN_2022_PROGRAM_ID })
-      .catch(() => ({ value: [] as never[] })),
-  ]);
+  const [lamports, standard, token2022] = await readWithFallback(network, (connection) =>
+    Promise.all([
+      connection.getBalance(ownerKey),
+      connection.getParsedTokenAccountsByOwner(ownerKey, { programId: TOKEN_PROGRAM_ID }),
+      connection
+        .getParsedTokenAccountsByOwner(ownerKey, { programId: TOKEN_2022_PROGRAM_ID })
+        .catch(() => ({ value: [] as never[] })),
+    ]),
+  );
 
   const raw = [...standard.value, ...token2022.value]
     .map((account) => {
@@ -112,20 +113,24 @@ export async function fetchTopHolders(
   mint: string,
   limit = 20,
 ): Promise<{ rows: HolderRow[]; supply: number }> {
-  const connection = new Connection(rpcEndpoint(network), "confirmed");
   const mintKey = new PublicKey(mint);
 
-  const [largest, supply] = await Promise.all([
-    connection.getTokenLargestAccounts(mintKey),
-    connection.getTokenSupply(mintKey),
-  ]);
+  // All three reads share one connection attempt, so a mid-sequence rate limit
+  // retries the whole group on the next endpoint rather than half-failing.
+  const { supply, accounts, owners } = await readWithFallback(network, async (connection) => {
+    const [largest, tokenSupply] = await Promise.all([
+      connection.getTokenLargestAccounts(mintKey),
+      connection.getTokenSupply(mintKey),
+    ]);
+    const top = largest.value.slice(0, limit);
+    return {
+      supply: tokenSupply,
+      accounts: top,
+      owners: await connection.getMultipleParsedAccounts(top.map((entry) => entry.address)),
+    };
+  });
 
   const total = supply.value.uiAmount ?? 0;
-  const accounts = largest.value.slice(0, limit);
-
-  const owners = await connection.getMultipleParsedAccounts(
-    accounts.map((account) => account.address),
-  );
 
   const rows: HolderRow[] = accounts.map((account, index) => {
     const data = owners.value[index]?.data;

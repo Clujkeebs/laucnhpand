@@ -1,4 +1,11 @@
 import { Connection, PublicKey } from "@solana/web3.js";
+import {
+  PUBLIC_DEVNET,
+  PUBLIC_MAINNET,
+  isPublicOnly,
+  parseEndpoints,
+  withFallback,
+} from "./rpc";
 
 export type Network = "mainnet-beta" | "devnet";
 
@@ -11,17 +18,36 @@ export const WSOL_MINT = new PublicKey("So11111111111111111111111111111111111111
  * Set NEXT_PUBLIC_MAINNET_RPC to a Helius/QuickNode/Triton URL before launching
  * anything on mainnet.
  */
+/** Both variables accept a comma-separated list; calls fall through it in order. */
+export function rpcEndpoints(network: Network): string[] {
+  return network === "devnet"
+    ? parseEndpoints(process.env.NEXT_PUBLIC_DEVNET_RPC, PUBLIC_DEVNET)
+    : parseEndpoints(process.env.NEXT_PUBLIC_MAINNET_RPC, PUBLIC_MAINNET);
+}
+
 export function rpcEndpoint(network: Network): string {
-  if (network === "devnet") {
-    return process.env.NEXT_PUBLIC_DEVNET_RPC || "https://api.devnet.solana.com";
-  }
-  return process.env.NEXT_PUBLIC_MAINNET_RPC || "https://api.mainnet-beta.solana.com";
+  return rpcEndpoints(network)[0];
+}
+
+/**
+ * Runs a read against each configured endpoint in turn, retrying rate limits
+ * and network blips. Use this for reads; transaction sends stay on one
+ * connection so a retry can never double-send.
+ */
+export function readWithFallback<T>(
+  network: Network,
+  call: (connection: Connection) => Promise<T>,
+): Promise<T> {
+  return withFallback({ endpoints: rpcEndpoints(network) }, (endpoint) =>
+    call(new Connection(endpoint, { commitment: "confirmed" })),
+  );
 }
 
 export function usingPublicRpc(network: Network): boolean {
-  return network === "devnet"
-    ? !process.env.NEXT_PUBLIC_DEVNET_RPC
-    : !process.env.NEXT_PUBLIC_MAINNET_RPC;
+  return isPublicOnly(
+    rpcEndpoints(network),
+    network === "devnet" ? PUBLIC_DEVNET : PUBLIC_MAINNET,
+  );
 }
 
 export function createConnection(network: Network): Connection {

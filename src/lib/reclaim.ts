@@ -23,7 +23,7 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { rpcEndpoint, type Network } from "./solana";
+import { readWithFallback, rpcEndpoint, type Network } from "./solana";
 import { batchAccounts, partitionAccounts, type ClosableAccount, type ReclaimScan } from "./rent";
 
 export {
@@ -36,15 +36,16 @@ export {
 } from "./rent";
 
 export async function scanForRent(network: Network, owner: string): Promise<ReclaimScan> {
-  const connection = new Connection(rpcEndpoint(network), "confirmed");
   const ownerKey = new PublicKey(owner);
 
-  const [standard, token2022] = await Promise.all([
-    connection.getParsedTokenAccountsByOwner(ownerKey, { programId: TOKEN_PROGRAM_ID }),
-    connection
-      .getParsedTokenAccountsByOwner(ownerKey, { programId: TOKEN_2022_PROGRAM_ID })
-      .catch(() => ({ value: [] as never[] })),
-  ]);
+  const [standard, token2022] = await readWithFallback(network, (connection) =>
+    Promise.all([
+      connection.getParsedTokenAccountsByOwner(ownerKey, { programId: TOKEN_PROGRAM_ID }),
+      connection
+        .getParsedTokenAccountsByOwner(ownerKey, { programId: TOKEN_2022_PROGRAM_ID })
+        .catch(() => ({ value: [] as never[] })),
+    ]),
+  );
 
   const accounts: ClosableAccount[] = [...standard.value, ...token2022.value].map((entry) => {
     const info = entry.account.data.parsed.info as {

@@ -29,7 +29,7 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import bs58 from "bs58";
-import { rpcEndpoint, type Network } from "./solana";
+import { rpcEndpoint, readWithFallback, type Network } from "./solana";
 import { toBaseUnits } from "./amount";
 
 /** Fixed on-chain size of a Token Metadata account. */
@@ -200,9 +200,10 @@ export async function fetchMintStatus(
   network: Network,
   mintAddress: string,
 ): Promise<MintStatus> {
-  const connection = new Connection(rpcEndpoint(network), "confirmed");
   const mint = new PublicKey(mintAddress);
-  const info = await connection.getParsedAccountInfo(mint);
+  const info = await readWithFallback(network, (connection) =>
+    connection.getParsedAccountInfo(mint),
+  );
   const data = info.value?.data;
   if (!data || !("parsed" in data)) throw new Error("Not a token mint on this network.");
 
