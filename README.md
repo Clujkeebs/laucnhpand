@@ -193,7 +193,9 @@ works, but you'll need to host the metadata JSON yourself and paste its URL.
 ```bash
 npm test        # amount math, keystore encryption, session auth
 npm run typecheck
-npm run test:e2e   # Playwright walkthrough against a running server
+npm run test:e2e             # Playwright walkthrough against a running server
+npm run test:e2e:mobile      # iPhone viewport: overflow + tappability
+npm run test:e2e:automation  # scheduler caps, audit log, persistence
 ```
 
 ## Before you spend real SOL

@@ -63,7 +63,7 @@ export function Shell({
           </button>
         </div>
 
-        <nav className="mt-6 flex gap-4 border-t border-rule pt-4 lg:mt-8 lg:flex-col lg:gap-0 lg:pt-5">
+        <nav className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-rule pt-4 lg:mt-8 lg:flex-col lg:flex-nowrap lg:gap-0 lg:pt-5">
           {NAV.map(({ href, plate, label }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
@@ -86,9 +86,9 @@ export function Shell({
           })}
         </nav>
 
-        <div className="mt-7 hidden lg:block">
+        <div className="mt-6 lg:mt-7">
           <p className="eyebrow mb-2.5">Network</p>
-          <div className="flex border border-rule">
+          <div className="flex max-w-[220px] border border-rule">
             {(["devnet", "mainnet-beta"] as const).map((option) => (
               <button
                 key={option}
@@ -112,7 +112,7 @@ export function Shell({
         </div>
 
         {publicKey ? (
-          <dl className="mt-6 hidden space-y-1.5 border-t border-rule pt-4 lg:block">
+          <dl className="mt-6 space-y-1.5 border-t border-rule pt-4">
             <Datum label="Key">{shortAddress(publicKey, 4)}</Datum>
             <Datum label="State">{keypair ? "open" : "sealed"}</Datum>
             <Datum label="SOL">{balanceSol === null ? "—" : balanceSol.toFixed(4)}</Datum>
@@ -122,7 +122,7 @@ export function Shell({
         <button
           type="button"
           onClick={signOut}
-          className="eyebrow mt-6 hidden hover:text-signal lg:block"
+          className="eyebrow mt-6 block hover:text-signal"
         >
           Sign out
         </button>
