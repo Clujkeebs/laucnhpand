@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { buy, sell, spotPrice, priceCurve, solToReachMultiple, summarize } from "../src/lib/amm.ts";
+import { feesFromVolume, volumeForTarget } from "../src/lib/fees.ts";
 
 let passed = 0;
 const check = (name: string, fn: () => unknown) => { fn(); passed += 1; console.log(`  ok  ${name}`); };
@@ -122,5 +123,27 @@ check("a buyer can never drain the pool", () => {
   const huge = buy(pool, 1e9);
   assert.ok(huge.tokensOut < pool.tokenReserve, "pool fully drained");
 });
+
+// --- creator fee economics ---
+const rates = { tradeFeeRate: 0.01, creatorFeeRate: 0.001 };
+
+check("fees are a straight cut of volume", () => {
+  near(feesFromVolume(1000, rates), 1);
+  near(feesFromVolume(2000, rates), 2, 1e-9);
+});
+
+check("volumeForTarget inverts feesFromVolume", () => {
+  for (const target of [0.1, 1, 10]) {
+    near(feesFromVolume(volumeForTarget(target, rates), rates), target, 1e-9);
+  }
+});
+
+check("no volume means no fees", () => {
+  assert.equal(feesFromVolume(0, rates), 0);
+  assert.equal(feesFromVolume(-5, rates), 0);
+});
+
+check("a zero creator rate can never reach a target", () =>
+  assert.equal(volumeForTarget(1, { tradeFeeRate: 0.01, creatorFeeRate: 0 }), Infinity));
 
 console.log(`\n${passed} passed`);

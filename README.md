@@ -12,11 +12,29 @@ this app has no account system because it has exactly one user.
 | | |
 |---|---|
 | **Ledger** | Balances, USD portfolio value via Jupiter, and every token you've issued from this browser. |
+| **Curve** | Issue against a Raydium LaunchLab bonding curve — no pool to fund, so the outlay is account rent. Buyers trade the curve, your share of the trade fee accrues to a vault, and you claim it. Migrates to a real pool when it raises its target. |
 | **Issue** | Create an SPL mint, upload image + metadata to IPFS, mint the full supply to yourself, and revoke the mint and freeze authorities in the same flow. |
 | **Market** | Create a Raydium CPMM pool against SOL. Permanently lock LP so the liquidity can't be withdrawn. |
 | **Examine** | Point at any mint and read its authorities, supply and holder concentration straight from the chain. Any token can be used as a *configuration* template for a new issuance. |
 | **Bridge** | Move value between Solana and Ethereum through Wormhole Connect. |
 | **Custody** | Generate or import a Solana keypair. Encrypted at rest (AES-256-GCM, PBKDF2-SHA256, 600k iterations). Export to Phantom any time. Auto-locks after 15 minutes idle and on every page reload. |
+
+### Launching without capital
+
+The curve desk is the honest version of "launch for free and earn from it".
+You are not funding a pool, so you spend only account rent. A disclosed trade
+fee is taken on every buy and sell against the curve, and the creator's share
+accrues to a vault you claim from. The rate is on chain — every buyer can read
+it before they trade — so the earnings come from trading volume rather than
+from anyone being misled.
+
+The page reads the live rates and does the arithmetic for you, because the
+arithmetic is the whole story: **your fee is a fixed cut of volume, with no
+leverage in it.** At a 0.1% creator share, earning 0.1 SOL takes roughly 100 SOL
+of trading through your curve; 1 SOL takes about 1,000. A curve nobody trades
+pays exactly nothing. That is not a flaw in the mechanism, it is the mechanism —
+and it is why the app spends more effort on making a token worth trading than on
+the launch button.
 
 ### The assistant
 
@@ -173,6 +191,7 @@ Next.js 15 (App Router) · TypeScript · Tailwind v4 · self-hosted webfonts ·
 src/
   app/
     page.tsx           ledger
+    free/              bonding-curve issuance + fee claiming
     launch/            issuance
     liquidity/         pool creation + LP locking
     inspect/           examination desk
@@ -194,6 +213,8 @@ src/
     portfolio.ts       balances, valuation, holder concentration
     amount.ts          decimal <-> base unit conversion
     amm.ts             constant-product pool math
+    fees.ts            creator fee economics (pure)
+    launchpad.ts       Raydium LaunchLab bonding curve
     report.ts          token grading, planned and observed
     tokenart.ts        procedural artwork generator
     theme.tsx          paper/dark switching
