@@ -8,6 +8,7 @@ import { useWallet } from "@/lib/wallet";
 import { explorerUrl, shortAddress } from "@/lib/solana";
 import { fetchPortfolio, type Portfolio } from "@/lib/portfolio";
 import { listLaunches, type LaunchRecord } from "@/lib/history";
+import { Reclaim } from "@/components/Reclaim";
 
 const usd = (value: number | null) =>
   value === null
@@ -91,6 +92,10 @@ export default function DashboardPage() {
           }
         />
         <Figure label="Tokens issued" value={launches.length} note="On this network" />
+      </div>
+
+      <div className="mb-11 max-w-2xl">
+        <Reclaim />
       </div>
 
       <div className="grid gap-11 lg:grid-cols-2">
