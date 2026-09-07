@@ -105,8 +105,9 @@ export function Shell({
             ))}
           </div>
           {network === "mainnet-beta" && usingPublicRpc(network) ? (
-            <p className="mt-2 text-[10.5px] leading-snug text-signal">
-              Public RPC — set a dedicated endpoint before issuing.
+            <p className="mt-2 text-[10.5px] leading-snug text-flag">
+              Using shared free nodes. Fine for looking around; a free Helius key in
+              NEXT_PUBLIC_MAINNET_RPC makes a live launch far more reliable.
             </p>
           ) : null}
         </div>

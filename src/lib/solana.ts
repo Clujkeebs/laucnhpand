@@ -1,9 +1,9 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
-  PUBLIC_DEVNET,
-  PUBLIC_MAINNET,
-  isPublicOnly,
+  DEFAULT_DEVNET,
+  DEFAULT_MAINNET,
   parseEndpoints,
+  usingDefaults,
   withFallback,
 } from "./rpc";
 
@@ -21,8 +21,8 @@ export const WSOL_MINT = new PublicKey("So11111111111111111111111111111111111111
 /** Both variables accept a comma-separated list; calls fall through it in order. */
 export function rpcEndpoints(network: Network): string[] {
   return network === "devnet"
-    ? parseEndpoints(process.env.NEXT_PUBLIC_DEVNET_RPC, PUBLIC_DEVNET)
-    : parseEndpoints(process.env.NEXT_PUBLIC_MAINNET_RPC, PUBLIC_MAINNET);
+    ? parseEndpoints(process.env.NEXT_PUBLIC_DEVNET_RPC, DEFAULT_DEVNET)
+    : parseEndpoints(process.env.NEXT_PUBLIC_MAINNET_RPC, DEFAULT_MAINNET);
 }
 
 export function rpcEndpoint(network: Network): string {
@@ -44,9 +44,9 @@ export function readWithFallback<T>(
 }
 
 export function usingPublicRpc(network: Network): boolean {
-  return isPublicOnly(
+  return usingDefaults(
     rpcEndpoints(network),
-    network === "devnet" ? PUBLIC_DEVNET : PUBLIC_MAINNET,
+    network === "devnet" ? DEFAULT_DEVNET : DEFAULT_MAINNET,
   );
 }
 
