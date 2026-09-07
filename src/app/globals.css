@@ -1,0 +1,336 @@
+@import "tailwindcss";
+@import "./fonts.css";
+
+/* ---------------------------------------------------------------
+   Prospectus — a launch is an issuance, so the app is set like a
+   printed spec sheet: paper, ink, hairline rules, no floating cards.
+   --------------------------------------------------------------- */
+
+:root {
+  --paper: #f3f0e9;
+  --paper-raised: #fbf9f5;
+  --paper-sunk: #eae6dc;
+  --ink: #16130d;
+  --ink-soft: #57513f;
+  --ink-faint: #8d8676;
+  --rule: #d8d2c4;
+  --rule-hard: #16130d;
+  --signal: #c33a22;
+  --signal-soft: #f6e6e1;
+  --verify: #1c6b48;
+  --verify-soft: #e2eee8;
+  --flag: #96650a;
+  --flag-soft: #f6ecd8;
+
+  /* Chart series. Validated for CVD separation and contrast against the paper
+     surface with the dataviz palette validator; the dark set is chosen
+     separately, not flipped. */
+  --series-1: #0090ab;
+  --series-2: #cf5a24;
+  --series-3: #8c5fd0;
+  --series-4: #5b8f2c;
+  --grid: #e2ddd0;
+
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-ui: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --paper: #100f0d;
+  --paper-raised: #191713;
+  --paper-sunk: #0a0908;
+  --ink: #f0ead9;
+  --ink-soft: #a49c88;
+  --ink-faint: #6d6656;
+  --rule: #2f2b24;
+  --rule-hard: #f0ead9;
+  --signal: #ef6a4d;
+  --signal-soft: #2c1712;
+  --verify: #4fc48c;
+  --verify-soft: #10261c;
+  --flag: #d9a441;
+  --flag-soft: #2a2010;
+
+  --series-1: #219cb4;
+  --series-2: #e06d33;
+  --series-3: #a077e0;
+  --series-4: #71a033;
+  --grid: #2a2620;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunk: var(--paper-sunk);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-signal: var(--signal);
+  --color-verify: var(--verify);
+  --color-flag: var(--flag);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-grid: var(--grid);
+  --font-display: var(--font-display);
+  --font-ui: var(--font-ui);
+  --font-data: var(--font-data);
+}
+
+* {
+  border-color: var(--rule);
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* --- Typography ------------------------------------------------ */
+
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: -0.021em;
+}
+
+@utility eyebrow {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+@utility annot {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+@utility data {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* --- Structure -------------------------------------------------- */
+
+@utility panel {
+  border-top: 1.5px solid var(--rule-hard);
+  padding-top: 1.125rem;
+}
+
+@utility sheet {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+}
+
+/* Spec-sheet row: label, dotted leader, value. */
+@utility datum {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 12px;
+}
+
+.datum > dt {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.datum > .leader {
+  flex: 1;
+  border-bottom: 1px dotted var(--rule);
+  transform: translateY(-3px);
+  min-width: 1rem;
+}
+
+.datum > dd {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+/* --- Controls --------------------------------------------------- */
+
+.ctl {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1.5px solid var(--rule);
+  border-radius: 0;
+  padding: 0.4rem 0 0.4rem;
+  font-family: var(--font-data);
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 130ms ease;
+}
+
+.ctl:focus {
+  border-bottom-color: var(--rule-hard);
+}
+
+.ctl::placeholder {
+  color: var(--ink-faint);
+  font-family: var(--font-ui);
+}
+
+textarea.ctl {
+  border: 1.5px solid var(--rule);
+  padding: 0.6rem 0.7rem;
+  font-family: var(--font-ui);
+  resize: none;
+}
+
+textarea.ctl:focus {
+  border-color: var(--rule-hard);
+}
+
+select.ctl {
+  appearance: none;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 6px center, right 1px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 1.25rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1.5px solid var(--rule-hard);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.6rem 1.1rem;
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 130ms ease, color 130ms ease, opacity 130ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.32;
+}
+
+.btn-quiet {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--rule);
+}
+
+.btn-quiet:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--rule-hard);
+}
+
+.btn-warn {
+  background: transparent;
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
+.btn-warn:hover:not(:disabled) {
+  background: var(--signal);
+  color: var(--paper);
+}
+
+/* --- Marks ------------------------------------------------------- */
+
+.tag {
+  display: inline-block;
+  font-family: var(--font-data);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.42rem;
+  border: 1px solid currentColor;
+}
+
+/* A rubber-stamped verdict, set at a slight angle. */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 2.5px solid currentColor;
+  padding: 0.42rem 0.8rem;
+  font-family: var(--font-data);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  transform: rotate(-2.2deg);
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--rule-hard);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: var(--ink);
+}
+
+.link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--rule);
+  transition: text-decoration-color 130ms ease;
+}
+
+.link:hover {
+  text-decoration-color: var(--ink);
+}
