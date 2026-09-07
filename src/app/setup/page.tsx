@@ -35,6 +35,7 @@ function Row({ name, set, note }: { name: string; set: boolean; note: string }) 
 export default function SetupPage() {
   const hasPassword = present("APP_PASSWORD");
   const hasSecret = present("AUTH_SECRET");
+  const ready = hasPassword && hasSecret;
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-14">
@@ -44,12 +45,24 @@ export default function SetupPage() {
       </div>
 
       <h1 className="display mb-4 text-[clamp(32px,5vw,50px)]">
-        {hasPassword || hasSecret ? "Almost there" : "Two secrets to set"}
+        {ready ? "Configured" : hasPassword || hasSecret ? "Almost there" : "Two secrets to set"}
       </h1>
       <p className="annot mb-10 max-w-[54ch]">
-        The app is deployed and built. It will not log anyone in until both of these exist.
-        Add them under Settings → Environment Variables, then redeploy — values set after a
-        build are only picked up by the next one.
+        {ready ? (
+          <>
+            Both required values are present, so you can{" "}
+            <a className="link" href="/login">
+              sign in
+            </a>
+            . This page stays available as a live view of what the running deployment can see.
+          </>
+        ) : (
+          <>
+            The app is deployed and built. It will not log anyone in until both of these exist.
+            Add them under Settings → Environment Variables — no rebuild needed, they are read
+            per request.
+          </>
+        )}
       </p>
 
       <section className="panel mb-10">
