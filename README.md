@@ -41,6 +41,24 @@ The same refusals apply here as everywhere else in the app: it will not propose
 a token that imitates an existing one, help disguise who controls a token, plan
 a liquidity pull, or claim a token will go up.
 
+### Automation
+
+The studio has an automation tab: give it a standing brief and an interval, and
+it drafts and launches on its own. It ships disarmed, devnet-only, one run a
+day, 0.1 SOL a day, and live runs need a separate explicit toggle. Every
+attempt — launched, skipped or failed — lands in an audit log with what it
+spent, and skipped or failed runs never count against the caps.
+
+**It only runs while the tab is open.** There is no server-side cron, because a
+scheduled job on the server would need your private key sitting in an
+environment variable. That is a trade this app does not make.
+
+Be clear-eyed about the arithmetic before arming it: each launch costs rent
+whether or not anyone ever trades the token, and mass-produced tokens
+overwhelmingly are not traded. A daily run for a month is roughly 0.6 SOL out
+against fees earned only on volume you do not have yet. The caps exist because
+this is exactly the shape of spend that runs away quietly.
+
 ### Launching without capital
 
 The curve desk is the honest version of "launch for free and earn from it".
@@ -239,6 +257,7 @@ src/
     amm.ts             constant-product pool math
     agent-tools.ts     tool definitions + server-side executors
     fees.ts            creator fee economics (pure)
+    scheduler.ts       automation config, caps, audit log
     launchpad.ts       Raydium LaunchLab bonding curve
     report.ts          token grading, planned and observed
     tokenart.ts        procedural artwork generator

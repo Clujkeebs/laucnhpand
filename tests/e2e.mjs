@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 
-const base = "http://localhost:3100";
+const base = process.env.BASE_URL ?? "http://localhost:3100";
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 

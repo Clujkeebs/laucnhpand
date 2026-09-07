@@ -8,8 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --no-warnings tests/amount.test.mts && node --experimental-strip-types --no-warnings tests/amm.test.mts && node --experimental-strip-types --no-warnings tests/security.test.mts",
-    "test:e2e": "node tests/e2e.mjs"
+    "test": "node --experimental-strip-types --no-warnings tests/amount.test.mts && node --experimental-strip-types --no-warnings tests/amm.test.mts && node --experimental-strip-types --no-warnings tests/scheduler.test.mts && node --experimental-strip-types --no-warnings tests/security.test.mts",
+    "test:e2e": "node tests/e2e.mjs",
+    "test:e2e:automation": "node tests/e2e-automation.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

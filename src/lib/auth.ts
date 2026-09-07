@@ -4,6 +4,11 @@
  */
 
 export const SESSION_COOKIE = "launchpad_session";
+
+/** Both secrets must be present before the app can authenticate anyone. */
+export function isConfigured(): boolean {
+  return Boolean(process.env.AUTH_SECRET && process.env.APP_PASSWORD);
+}
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const enc = new TextEncoder();
