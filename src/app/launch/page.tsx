@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Rocket } from "lucide-react";
 import { Shell } from "@/components/Shell";
@@ -23,6 +24,7 @@ import { estimateLaunchCost, launchToken, type LaunchCost } from "@/lib/token";
 import { toBaseUnits } from "@/lib/amount";
 import { reportPlannedLaunch } from "@/lib/report";
 import { rememberLaunch } from "@/lib/history";
+import { ArtAssist, ConceptAssist, type Candidate } from "@/components/Assist";
 
 export default function LaunchPage() {
   return (
@@ -31,7 +33,9 @@ export default function LaunchPage() {
       standfirst="Creates the mint, attaches metadata, and sends the full supply to your wallet. The report on the right is what anyone checking your token will see."
     >
       <WalletGate>
-        <LaunchForm />
+        <Suspense fallback={null}>
+          <LaunchForm />
+        </Suspense>
       </WalletGate>
     </Shell>
   );
@@ -39,16 +43,28 @@ export default function LaunchPage() {
 
 function LaunchForm() {
   const { keypair, network, connection, balanceSol, refreshBalance } = useWallet();
+  const params = useSearchParams();
 
+  // A template carries an existing token's *configuration* only — never its
+  // name, symbol or artwork. Those are yours to supply.
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
-  const [decimals, setDecimals] = useState(9);
-  const [supply, setSupply] = useState("1000000000");
+  const [decimals, setDecimals] = useState(() => {
+    const raw = params.get("decimals");
+    if (raw === null) return 9;
+    const value = Number(raw);
+    return Number.isInteger(value) && value >= 0 && value <= 9 ? value : 9;
+  });
+  const [supply, setSupply] = useState(() => {
+    const value = params.get("supply");
+    return value && /^\d+(\.\d+)?$/.test(value) ? value : "1000000000";
+  });
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
   const [twitter, setTwitter] = useState("");
   const [telegram, setTelegram] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [artPreview, setArtPreview] = useState<string | null>(null);
   const [manualUri, setManualUri] = useState("");
   const [useManualUri, setUseManualUri] = useState(false);
 
@@ -240,6 +256,41 @@ function LaunchForm() {
   return (
     <form onSubmit={submit} className="grid max-w-6xl gap-10 lg:grid-cols-[1.35fr_1fr]">
       <div className="space-y-11">
+        {params.get("template") ? (
+          <Note>
+            Started from an existing token&apos;s configuration — supply, decimals and
+            authority settings only. The name, symbol and artwork are yours to write.
+          </Note>
+        ) : null}
+
+        <Panel
+          index="00"
+          eyebrow="Assistant"
+          title="Draft it"
+          note="Optional. Names come from Claude; artwork is generated locally and costs nothing."
+        >
+          <div className="space-y-8">
+            <ConceptAssist
+              onApply={(candidate: Candidate) => {
+                setName(candidate.name);
+                setSymbol(candidate.symbol);
+                setDescription(candidate.description);
+              }}
+            />
+            <div className="border-t border-rule pt-7">
+              <ArtAssist
+                seed={name || symbol}
+                label={name || symbol}
+                onApply={(file, preview) => {
+                  setImage(file);
+                  setArtPreview(preview);
+                  setUseManualUri(false);
+                }}
+              />
+            </div>
+          </div>
+        </Panel>
+
         <Panel index="01" eyebrow="Identity" title="What it's called">
           <div className="grid gap-6 sm:grid-cols-2">
             <Field label="Name">
@@ -326,7 +377,17 @@ function LaunchForm() {
               />
             </Field>
           ) : (
-            <label className="flex cursor-pointer items-baseline gap-4 border-b-[1.5px] border-rule pb-3 transition hover:border-[color:var(--rule-hard)]">
+            <label className="flex cursor-pointer items-center gap-4 border-b-[1.5px] border-rule pb-3 transition hover:border-[color:var(--rule-hard)]">
+              {artPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={artPreview}
+                  alt=""
+                  width={44}
+                  height={44}
+                  className="shrink-0 border border-rule"
+                />
+              ) : null}
               <span className="eyebrow">File</span>
               <span className="data flex-1 truncate text-[13px]">
                 {image ? image.name : "Choose an image…"}

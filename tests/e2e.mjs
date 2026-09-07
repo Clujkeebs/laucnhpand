@@ -53,6 +53,11 @@ await page.click('button:has-text("Issue token")');
 await page.waitForSelector("text=Name is required", { timeout: 10000 });
 console.log("validation blocks empty launch OK");
 
+// Defaults must not be derived from absent query params.
+const defaultDecimals = await page.locator("select").inputValue();
+if (defaultDecimals !== "9") throw new Error(`default decimals should be 9, got ${defaultDecimals}`);
+console.log("default decimals is 9 OK");
+
 // 7. A full reload must drop the in-memory key and re-lock
 await page.goto(`${base}/liquidity`);
 await page.waitForSelector("text=Wallet locked", { timeout: 10000 });

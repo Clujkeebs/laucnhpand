@@ -14,8 +14,35 @@ this app has no account system because it has exactly one user.
 | **Ledger** | Balances, USD portfolio value via Jupiter, and every token you've issued from this browser. |
 | **Issue** | Create an SPL mint, upload image + metadata to IPFS, mint the full supply to yourself, and revoke the mint and freeze authorities in the same flow. |
 | **Market** | Create a Raydium CPMM pool against SOL. Permanently lock LP so the liquidity can't be withdrawn. |
-| **Examine** | Point at any mint and read its authorities, supply and holder concentration straight from the chain. |
+| **Examine** | Point at any mint and read its authorities, supply and holder concentration straight from the chain. Any token can be used as a *configuration* template for a new issuance. |
+| **Bridge** | Move value between Solana and Ethereum through Wormhole Connect. |
 | **Custody** | Generate or import a Solana keypair. Encrypted at rest (AES-256-GCM, PBKDF2-SHA256, 600k iterations). Export to Phantom any time. Auto-locks after 15 minutes idle and on every page reload. |
+
+### The assistant
+
+Two things on the issuance form, both optional:
+
+**Names** come from Claude (`claude-opus-5`) — three candidates with symbol and
+description, from a one-line brief. Needs `ANTHROPIC_API_KEY`; without it the
+panel says so and the rest of the form works normally. The model is instructed
+never to propose a name that imitates an existing token or implies the token
+will gain value, and to ignore a brief that asks it to.
+
+**Artwork** is generated locally — four styles, deterministic from the token's
+name, rendered to PNG in the browser. No API key, no network call, no cost, and
+the same name always produces the same mark. It goes straight into the metadata
+upload.
+
+### The projection
+
+Before you create a pool, the market page plots what that pool will actually do:
+the price curve every buyer walks up, the price move a 1 SOL buy causes, the SOL
+needed to double the price, and the share of supply you are actually putting in.
+
+All of it comes from the two reserve amounts alone — no market data, no oracle —
+so it works before the token has ever traded. It is also where thin liquidity
+becomes obvious: 800M tokens against 5 SOL means a single 1 SOL buy moves the
+price 44%, and the first seller moves it back just as hard.
 
 ### The report
 
@@ -137,7 +164,8 @@ remembered, with a pre-paint script so the page never flashes the wrong ground.
 Next.js 15 (App Router) · TypeScript · Tailwind v4 · self-hosted webfonts ·
 `@solana/web3.js` ·
 `@solana/spl-token` · Metaplex Umi + `mpl-token-metadata` ·
-`@raydium-io/raydium-sdk-v2` · Jupiter price API
+`@raydium-io/raydium-sdk-v2` · Jupiter price API · `@anthropic-ai/sdk` ·
+`@wormhole-foundation/wormhole-connect`
 
 ## Layout
 
@@ -148,13 +176,16 @@ src/
     launch/            issuance
     liquidity/         pool creation + LP locking
     inspect/           examination desk
+    bridge/            Wormhole transfer
     wallet/            custody
     login/             password gate
     api/
       auth/            session cookie issue + clear
+      ai/concept/      naming assistant (Claude)
       market/          Jupiter price + token metadata proxy
       upload/          IPFS pinning for image + metadata JSON
-  components/          Shell, WalletGate, ReportSheet, UI primitives
+  components/          Shell, WalletGate, ReportSheet, Chart, Assist,
+                       PoolPreview, BridgeWidget, Logo, UI primitives
   lib/
     keystore.ts        browser-side encryption
     wallet.tsx         wallet context, auto-lock
@@ -162,7 +193,9 @@ src/
     pool.ts            Raydium CPMM
     portfolio.ts       balances, valuation, holder concentration
     amount.ts          decimal <-> base unit conversion
+    amm.ts             constant-product pool math
     report.ts          token grading, planned and observed
+    tokenart.ts        procedural artwork generator
     theme.tsx          paper/dark switching
     auth.ts            HMAC session tokens
   middleware.ts        route gate

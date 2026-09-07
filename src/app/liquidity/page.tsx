@@ -11,6 +11,7 @@ import { explorerUrl } from "@/lib/solana";
 import { createLiquidityPool, isValidMint, lockLiquidity } from "@/lib/pool";
 import { fetchMintStatus } from "@/lib/token";
 import { listLaunches, updateLaunch } from "@/lib/history";
+import { PoolPreview } from "@/components/PoolPreview";
 
 export default function LiquidityPage() {
   return (
@@ -38,6 +39,7 @@ function CreatePool() {
   const [decimals, setDecimals] = useState<number | null>(
     params.get("decimals") ? Number(params.get("decimals")) : null,
   );
+  const [supplyForMint, setSupplyForMint] = useState<number | null>(null);
   const [tokenAmount, setTokenAmount] = useState("");
   const [solAmount, setSolAmount] = useState("");
   const [busy, setBusy] = useState(false);
@@ -50,21 +52,25 @@ function CreatePool() {
   useEffect(() => {
     if (!isValidMint(mint)) {
       setDecimals(null);
+      setSupplyForMint(null);
       return;
     }
     let cancelled = false;
     fetchMintStatus(network, mint)
-      .then((status) => !cancelled && setDecimals(status.decimals))
-      .catch(() => !cancelled && setDecimals(null));
+      .then((status) => {
+        if (cancelled) return;
+        setDecimals(status.decimals);
+        setSupplyForMint(Number(status.supply) / 10 ** status.decimals);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDecimals(null);
+        setSupplyForMint(null);
+      });
     return () => {
       cancelled = true;
     };
   }, [mint, network]);
-
-  const impliedPrice =
-    Number(tokenAmount) > 0 && Number(solAmount) > 0
-      ? Number(solAmount) / Number(tokenAmount)
-      : null;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -154,11 +160,14 @@ function CreatePool() {
           </Field>
         </div>
 
-        {impliedPrice ? (
-          <dl>
-            <Datum label="Opening price, SOL">{impliedPrice.toExponential(4)}</Datum>
-          </dl>
-        ) : null}
+        <div className="border-t border-rule pt-6">
+          <p className="eyebrow mb-4">Projection</p>
+          <PoolPreview
+            tokenAmount={Number(tokenAmount) || 0}
+            solAmount={Number(solAmount) || 0}
+            totalSupply={supplyForMint ?? 0}
+          />
+        </div>
 
         <Note tone="flag">
           The SOL side is real money that leaves your wallet. You get it back only by withdrawing

@@ -22,6 +22,15 @@
   --flag: #96650a;
   --flag-soft: #f6ecd8;
 
+  /* Chart series. Validated for CVD separation and contrast against the paper
+     surface with the dataviz palette validator; the dark set is chosen
+     separately, not flipped. */
+  --series-1: #0090ab;
+  --series-2: #cf5a24;
+  --series-3: #8c5fd0;
+  --series-4: #5b8f2c;
+  --grid: #e2ddd0;
+
   --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
   --font-ui: "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -45,6 +54,12 @@
   --flag: #d9a441;
   --flag-soft: #2a2010;
 
+  --series-1: #219cb4;
+  --series-2: #e06d33;
+  --series-3: #a077e0;
+  --series-4: #71a033;
+  --grid: #2a2620;
+
   color-scheme: dark;
 }
 
@@ -59,6 +74,11 @@
   --color-signal: var(--signal);
   --color-verify: var(--verify);
   --color-flag: var(--flag);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-grid: var(--grid);
   --font-display: var(--font-display);
   --font-ui: var(--font-ui);
   --font-data: var(--font-data);

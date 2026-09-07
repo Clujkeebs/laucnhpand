@@ -8,13 +8,15 @@ import { useWallet } from "@/lib/wallet";
 import { useTheme } from "@/lib/theme";
 import { shortAddress, usingPublicRpc } from "@/lib/solana";
 import { Datum } from "./ui";
+import { Logo } from "./Logo";
 
 const NAV = [
   { href: "/", plate: "00", label: "Ledger" },
   { href: "/launch", plate: "01", label: "Issue" },
   { href: "/liquidity", plate: "02", label: "Market" },
   { href: "/inspect", plate: "03", label: "Examine" },
-  { href: "/wallet", plate: "04", label: "Custody" },
+  { href: "/bridge", plate: "04", label: "Bridge" },
+  { href: "/wallet", plate: "05", label: "Custody" },
 ];
 
 export function Shell({
@@ -42,7 +44,10 @@ export function Shell({
       <aside className="shrink-0 border-b border-rule px-6 py-5 lg:h-screen lg:w-[248px] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-7 lg:py-8">
         <div className="flex items-start justify-between lg:block">
           <Link href="/" className="block">
-            <span className="display block text-[30px] leading-none">Launchpad</span>
+            <span className="flex items-center gap-2.5">
+              <Logo size={26} />
+              <span className="display text-[30px] leading-none">Launchpad</span>
+            </span>
             <span className="eyebrow mt-2 block">Solana · Issuance desk</span>
           </Link>
 

@@ -21,12 +21,12 @@ function secret(): string {
 async function sign(payload: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
-    enc.encode(secret()),
+    enc.encode(secret()) as BufferSource,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
   );
-  return toHex(await crypto.subtle.sign("HMAC", key, enc.encode(payload)));
+  return toHex(await crypto.subtle.sign("HMAC", key, enc.encode(payload) as BufferSource));
 }
 
 /** Constant-time comparison so a wrong guess leaks nothing through timing. */
@@ -57,8 +57,8 @@ export async function checkPassword(candidate: string): Promise<boolean> {
   if (!expected) throw new Error("APP_PASSWORD is not set.");
   // Hash both sides first so the comparison length doesn't reveal the real length.
   const [a, b] = await Promise.all([
-    crypto.subtle.digest("SHA-256", enc.encode(candidate)),
-    crypto.subtle.digest("SHA-256", enc.encode(expected)),
+    crypto.subtle.digest("SHA-256", enc.encode(candidate) as BufferSource),
+    crypto.subtle.digest("SHA-256", enc.encode(expected) as BufferSource),
   ]);
   return safeEqual(toHex(a), toHex(b));
 }

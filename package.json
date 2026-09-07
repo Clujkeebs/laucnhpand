@@ -8,10 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --no-warnings tests/amount.test.mts && node --experimental-strip-types --no-warnings tests/security.test.mts",
+    "test": "node --experimental-strip-types --no-warnings tests/amount.test.mts && node --experimental-strip-types --no-warnings tests/amm.test.mts && node --experimental-strip-types --no-warnings tests/security.test.mts",
     "test:e2e": "node tests/e2e.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
     "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
     "@metaplex-foundation/umi": "^1.5.1",
     "@metaplex-foundation/umi-bundle-defaults": "^1.5.1",
@@ -19,13 +20,15 @@
     "@solana/spl-token": "^0.4.15",
     "@solana/web3.js": "^1.98.4",
     "@types/bn.js": "^5.2.0",
+    "@wormhole-foundation/wormhole-connect": "^6.0.0",
     "bn.js": "^5.2.5",
     "bs58": "^6.0.0",
     "lucide-react": "^1.41.0",
     "next": "^15.5.25",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

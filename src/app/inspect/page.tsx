@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Shell } from "@/components/Shell";
 import { ReportSheet } from "@/components/ReportSheet";
+import Link from "next/link";
 import { Button, Copyable, Datum, ExternalRef, Note, Panel, Spinner } from "@/components/ui";
 import { useWallet } from "@/lib/wallet";
 import { explorerUrl, shortAddress } from "@/lib/solana";
@@ -135,8 +136,21 @@ function Inspector() {
                   {status.freezeAuthority ? shortAddress(status.freezeAuthority, 4) : "revoked"}
                 </Datum>
               </dl>
-              <div className="mt-5">
+              <div className="mt-5 flex flex-wrap items-center gap-5">
                 <Copyable value={status.mint} label="Copy mint address" />
+                <Link
+                  href={`/launch?template=${status.mint}&decimals=${status.decimals}&supply=${uiSupply}`}
+                  className="eyebrow hover:text-ink"
+                >
+                  Use as template →
+                </Link>
+              </div>
+              <div className="mt-4">
+                <Note>
+                  A template carries the configuration — supply, decimals, authority
+                  settings. It does not carry the name, symbol or artwork, and copying a
+                  token&apos;s identity to catch its buyers is fraud, not a shortcut.
+                </Note>
               </div>
             </Panel>
 
