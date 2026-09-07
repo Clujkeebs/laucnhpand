@@ -134,10 +134,16 @@ panel says so and the rest of the form works normally. The model is instructed
 never to propose a name that imitates an existing token or implies the token
 will gain value, and to ignore a brief that asks it to.
 
-**Artwork** is generated locally — four styles, deterministic from the token's
-name, rendered to PNG in the browser. No API key, no network call, no cost, and
-the same name always produces the same mark. It goes straight into the metadata
-upload.
+**Artwork** comes two ways. *Generated marks* are procedural — four styles,
+deterministic from the token's name, drawn in the browser with no key, no
+network call and no cost. *AI images* are real text-to-image: describe what you
+want and it is drawn as a square coin mark. That works with no key too, via a
+free shared service; setting `FAL_KEY` or `TOGETHER_API_KEY` makes it faster and
+better. Either way the result goes straight into the metadata upload.
+
+Each image provider enforces its own content policy. The app passes your prompt
+through and reports what comes back — it neither adds filtering nor tries to
+circumvent theirs.
 
 ### The projection
 
