@@ -12,12 +12,34 @@ this app has no account system because it has exactly one user.
 | | |
 |---|---|
 | **Ledger** | Balances, USD portfolio value via Jupiter, and every token you've issued from this browser. |
+| **Studio** | Work through a token with the assistant, then have it draft one. It calls tools to model pools and fee earnings, and proposes launches you confirm. |
 | **Curve** | Issue against a Raydium LaunchLab bonding curve — no pool to fund, so the outlay is account rent. Buyers trade the curve, your share of the trade fee accrues to a vault, and you claim it. Migrates to a real pool when it raises its target. |
 | **Issue** | Create an SPL mint, upload image + metadata to IPFS, mint the full supply to yourself, and revoke the mint and freeze authorities in the same flow. |
 | **Market** | Create a Raydium CPMM pool against SOL. Permanently lock LP so the liquidity can't be withdrawn. |
 | **Examine** | Point at any mint and read its authorities, supply and holder concentration straight from the chain. Any token can be used as a *configuration* template for a new issuance. |
 | **Bridge** | Move value between Solana and Ethereum through Wormhole Connect. |
 | **Custody** | Generate or import a Solana keypair. Encrypted at rest (AES-256-GCM, PBKDF2-SHA256, 600k iterations). Export to Phantom any time. Auto-locks after 15 minutes idle and on every page reload. |
+
+### The studio agent
+
+The assistant in the studio has tools and runs a real agent loop. Read-only and
+arithmetic tools — modelling a pool, projecting fee earnings — execute on the
+server inside the loop. Anything that spends money does not.
+
+**It cannot sign anything.** Your key is decrypted only in your browser, so the
+loop physically cannot move value: when the model decides a token is worth
+making it calls `propose_launch`, which stops the loop and hands a draft to the
+browser. You see the name, ticker, supply, generated artwork and its reasoning,
+and nothing happens until you press confirm — at which point *your* browser
+signs it. The outcome is fed back so the conversation continues, and the token
+appears on your ledger.
+
+That split is deliberate. An agent that could sign would be one prompt injection
+away from spending your wallet.
+
+The same refusals apply here as everywhere else in the app: it will not propose
+a token that imitates an existing one, help disguise who controls a token, plan
+a liquidity pull, or claim a token will go up.
 
 ### Launching without capital
 
@@ -192,6 +214,7 @@ src/
   app/
     page.tsx           ledger
     free/              bonding-curve issuance + fee claiming
+    studio/            agent chat
     launch/            issuance
     liquidity/         pool creation + LP locking
     inspect/           examination desk
@@ -200,6 +223,7 @@ src/
     login/             password gate
     api/
       auth/            session cookie issue + clear
+      ai/agent/        studio agent loop (tools, client-confirmed actions)
       ai/concept/      naming assistant (Claude)
       market/          Jupiter price + token metadata proxy
       upload/          IPFS pinning for image + metadata JSON
@@ -213,6 +237,7 @@ src/
     portfolio.ts       balances, valuation, holder concentration
     amount.ts          decimal <-> base unit conversion
     amm.ts             constant-product pool math
+    agent-tools.ts     tool definitions + server-side executors
     fees.ts            creator fee economics (pure)
     launchpad.ts       Raydium LaunchLab bonding curve
     report.ts          token grading, planned and observed

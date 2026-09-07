@@ -12,12 +12,13 @@ import { Logo } from "./Logo";
 
 const NAV = [
   { href: "/", plate: "00", label: "Ledger" },
-  { href: "/free", plate: "01", label: "Curve" },
-  { href: "/launch", plate: "02", label: "Issue" },
-  { href: "/liquidity", plate: "03", label: "Market" },
-  { href: "/inspect", plate: "04", label: "Examine" },
-  { href: "/bridge", plate: "05", label: "Bridge" },
-  { href: "/wallet", plate: "06", label: "Custody" },
+  { href: "/studio", plate: "01", label: "Studio" },
+  { href: "/free", plate: "02", label: "Curve" },
+  { href: "/launch", plate: "03", label: "Issue" },
+  { href: "/liquidity", plate: "04", label: "Market" },
+  { href: "/inspect", plate: "05", label: "Examine" },
+  { href: "/bridge", plate: "06", label: "Bridge" },
+  { href: "/wallet", plate: "07", label: "Custody" },
 ];
 
 export function Shell({
