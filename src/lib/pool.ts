@@ -12,7 +12,7 @@ import {
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { rpcEndpoint, WSOL_MINT, type Network } from "./solana";
-import { toBaseUnits } from "./token";
+import { toBaseUnits } from "./amount";
 
 export type PoolParams = {
   /** Your token's mint address. */

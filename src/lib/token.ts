@@ -31,6 +31,7 @@ import {
 } from "@solana/web3.js";
 import bs58 from "bs58";
 import { rpcEndpoint, type Network } from "./solana";
+import { toBaseUnits } from "./amount";
 
 /** Fixed on-chain size of a Token Metadata account. */
 const METADATA_ACCOUNT_SIZE = 679;
@@ -81,17 +82,6 @@ function umiFor(network: Network, payer: Keypair): Umi {
   const umi = createUmi(rpcEndpoint(network)).use(mplTokenMetadata());
   const signer = umi.eddsa.createKeypairFromSecretKey(payer.secretKey);
   return umi.use(keypairIdentity(signer));
-}
-
-/** Convert a human supply ("1000000") into base units for the given decimals. */
-export function toBaseUnits(supply: string, decimals: number): bigint {
-  const cleaned = supply.replace(/[,_\s]/g, "");
-  if (!/^\d+(\.\d+)?$/.test(cleaned)) throw new Error("Supply must be a positive number.");
-  const [whole, fraction = ""] = cleaned.split(".");
-  if (fraction.length > decimals) {
-    throw new Error(`Supply has more than ${decimals} decimal places.`);
-  }
-  return BigInt(whole + fraction.padEnd(decimals, "0"));
 }
 
 export type LaunchResult = {

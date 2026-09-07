@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #07090d;
+  --color-ink-900: #0b0e14;
+  --color-ink-850: #10141c;
+  --color-ink-800: #151a24;
+  --color-ink-700: #1e2532;
+  --color-ink-600: #2b3444;
+  --color-ink-400: #6b7688;
+  --color-ink-300: #98a2b3;
+  --color-ink-200: #cbd3e0;
+
+  --color-mint-500: #14e39a;
+  --color-mint-400: #4bf0b5;
+  --color-mint-900: #0a2e22;
+
+  --color-danger-500: #ff5c6c;
+  --color-warn-500: #ffb020;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, "Cascadia Code", monospace;
+}
+
+html,
+body {
+  background: var(--color-ink-950);
+  color: var(--color-ink-200);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  border-color: var(--color-ink-700);
+}
+
+::selection {
+  background: var(--color-mint-900);
+  color: var(--color-mint-400);
+}
+
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+@utility card {
+  background: var(--color-ink-900);
+  border: 1px solid var(--color-ink-700);
+  border-radius: 0.875rem;
+}
+
+@utility field {
+  width: 100%;
+  background: var(--color-ink-850);
+  border: 1px solid var(--color-ink-700);
+  border-radius: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-ink-200);
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+input.field:focus,
+select.field:focus,
+textarea.field:focus {
+  border-color: var(--color-mint-500);
+}
+
+input.field::placeholder,
+textarea.field::placeholder {
+  color: var(--color-ink-400);
+}
