@@ -11,6 +11,7 @@ this app has no account system because it has exactly one user.
 
 | | |
 |---|---|
+| **Public page** | `/t/<mint>` — the one route outside the login gate. Live on-chain figures and the open checks, built to be the link you post. |
 | **Recovery** | Closes empty token accounts and returns the rent locked in them. The one screen that produces SOL instead of spending it. |
 | **Ledger** | Balances, USD portfolio value via Jupiter, and every token you've issued from this browser. |
 | **Studio** | Work through a token with the assistant, then have it draft one. It calls tools to model pools and fee earnings, and proposes launches you confirm. |
@@ -20,6 +21,21 @@ this app has no account system because it has exactly one user.
 | **Examine** | Point at any mint and read its authorities, supply and holder concentration straight from the chain. Any token can be used as a *configuration* template for a new issuance. |
 | **Bridge** | Move value between Solana and Ethereum through Wormhole Connect. |
 | **Custody** | Generate or import a Solana keypair. Encrypted at rest (AES-256-GCM, PBKDF2-SHA256, 600k iterations). Export to Phantom any time. Auto-locks after 15 minutes idle and on every page reload. |
+
+### Model providers
+
+Set `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY` — OpenRouter takes precedence
+if both are present, and `OPENROUTER_MODEL` selects the model. Both go through
+one adapter (`src/lib/llm.ts`) that normalises Anthropic's and OpenAI's message
+shapes, so the agent loop is provider-agnostic.
+
+A caveat worth knowing before you pick a free model: naming works fine on
+almost anything, but the studio agent depends on **multi-step tool calling**,
+and free models are markedly worse at it — they skip tools, emit malformed
+arguments, or answer from guesswork instead of calling `project_pool`. The
+adapter tolerates malformed tool arguments rather than crashing, but it cannot
+make a weak model use tools well. `anthropic/claude-3.5-haiku` is the default
+because it is cheap *and* reliable with tools.
 
 ### The studio agent
 
@@ -41,6 +57,21 @@ away from spending your wallet.
 The same refusals apply here as everywhere else in the app: it will not propose
 a token that imitates an existing one, help disguise who controls a token, plan
 a liquidity pull, or claim a token will go up.
+
+### The page you send people
+
+Launching is the easy half; the token still needs a reason for anyone to trade
+it. `/t/<mint>` is a public page for any token — no login — that reads
+everything live from the chain and leads with the checks a careful buyer would
+run anyway: authorities, supply, holder concentration, and the same score the
+issuance report uses. It carries Open Graph tags so it previews properly in a
+post.
+
+It deliberately does not pitch. A page that says "revoked, revoked, top ten
+hold 12%" is more persuasive to the people worth attracting than one that
+promises a gain, and it cannot age into a lie. An RPC outage says so explicitly
+rather than 404ing, because "not found" would be a false statement about
+someone's token.
 
 ### Getting off zero
 
@@ -249,7 +280,8 @@ src/
   app/
     page.tsx           ledger
     free/              bonding-curve issuance + fee claiming
-    studio/            agent chat
+    studio/            agent chat + automation
+    t/[mint]/          public token page
     launch/            issuance
     liquidity/         pool creation + LP locking
     inspect/           examination desk
@@ -274,6 +306,7 @@ src/
     amm.ts             constant-product pool math
     agent-tools.ts     tool definitions + server-side executors
     fees.ts            creator fee economics (pure)
+    llm.ts             provider adapter (Anthropic + OpenRouter)
     reclaim.ts         closing empty accounts on chain
     rent.ts            rent-recovery arithmetic and safety rules (pure)
     scheduler.ts       automation config, caps, audit log

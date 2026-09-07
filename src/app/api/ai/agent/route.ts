@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { TOOLS, isClientAction, runServerTool } from "@/lib/agent-tools";
+import { LlmError, activeProvider, chat, providerLabel, type ChatTurn } from "@/lib/llm";
 
 export const maxDuration = 120;
 
 /** Guard against a runaway loop burning tokens on a single request. */
 const MAX_TURNS = 8;
-const MAX_MESSAGES = 60;
+const MAX_HISTORY = 60;
 
 const SYSTEM = `You are the assistant inside Launchpad, a private Solana token
 launcher used by one person — the operator. You help them think through a token
@@ -44,108 +44,83 @@ If the operator pushes on any of the above, say once, plainly, that you will not
 help with that part, then continue with the parts you can. Do not lecture, and do
 not repeat a refusal you have already given in this conversation.`;
 
-type ClientMessage = Anthropic.MessageParam;
+const TOOL_SPECS = TOOLS.map((tool) => ({
+  name: tool.name,
+  description: tool.description ?? "",
+  parameters: tool.input_schema as Record<string, unknown>,
+}));
 
 export async function POST(request: Request) {
-  let messages: ClientMessage[];
+  let turns: ChatTurn[];
   try {
-    ({ messages } = (await request.json()) as { messages: ClientMessage[] });
+    ({ turns } = (await request.json()) as { turns: ChatTurn[] });
   } catch {
     return NextResponse.json({ error: "Bad request." }, { status: 400 });
   }
 
-  if (!Array.isArray(messages) || messages.length === 0) {
+  if (!Array.isArray(turns) || turns.length === 0) {
     return NextResponse.json({ error: "No messages supplied." }, { status: 400 });
   }
-  if (messages.length > MAX_MESSAGES) {
+  if (turns.length > MAX_HISTORY) {
     return NextResponse.json(
       { error: "This conversation is too long. Start a new one." },
       { status: 400 },
     );
   }
-
-  // Validate the request before checking configuration, so a malformed body is
-  // reported as such whether or not a key happens to be present.
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!activeProvider()) {
     return NextResponse.json(
       {
         error:
-          "ANTHROPIC_API_KEY is not set. Add it in your environment to use the assistant.",
+          "No model configured. Set OPENROUTER_API_KEY (cheap and free models) or ANTHROPIC_API_KEY.",
       },
       { status: 501 },
     );
   }
 
-  const client = new Anthropic();
-  const working = [...messages];
+  const working = [...turns];
 
   try {
     for (let turn = 0; turn < MAX_TURNS; turn += 1) {
-      const response = await client.messages.create({
-        model: "claude-opus-5",
-        max_tokens: 8000,
-        thinking: { type: "adaptive" },
-        output_config: { effort: "medium" },
-        system: SYSTEM,
-        tools: TOOLS,
-        messages: working,
-      });
+      const result = await chat(SYSTEM, working, TOOL_SPECS);
 
-      if (response.stop_reason === "refusal") {
+      if (result.refused) {
         return NextResponse.json(
           { error: "The assistant declined that request." },
           { status: 422 },
         );
       }
 
-      // Append the full content — thinking blocks must be replayed unchanged.
-      working.push({ role: "assistant", content: response.content });
+      working.push({
+        role: "assistant",
+        text: result.text,
+        toolCalls: result.toolCalls.length ? result.toolCalls : undefined,
+      });
 
-      if (response.stop_reason !== "tool_use") {
-        const text = response.content
-          .filter((block): block is Anthropic.TextBlock => block.type === "text")
-          .map((block) => block.text)
-          .join("\n")
-          .trim();
-        return NextResponse.json({ messages: working, reply: text });
+      if (result.toolCalls.length === 0) {
+        return NextResponse.json({ turns: working, reply: result.text, provider: providerLabel() });
       }
 
-      const calls = response.content.filter(
-        (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
-      );
-
-      // A client action stops the loop: the browser owns the key, so it must
-      // produce this result. Everything queued alongside it waits for the
-      // follow-up request.
-      const action = calls.find((call) => isClientAction(call.name));
+      // A client action stops the loop: the browser owns the key, so only it can
+      // produce this result.
+      const action = result.toolCalls.find((call) => isClientAction(call.name));
       if (action) {
-        const text = response.content
-          .filter((block): block is Anthropic.TextBlock => block.type === "text")
-          .map((block) => block.text)
-          .join("\n")
-          .trim();
         return NextResponse.json({
-          messages: working,
-          reply: text,
-          pendingAction: {
-            toolUseId: action.id,
-            name: action.name,
-            input: action.input,
-          },
+          turns: working,
+          reply: result.text,
+          provider: providerLabel(),
+          pendingAction: { toolUseId: action.id, name: action.name, input: action.input },
         });
       }
 
-      const results: Anthropic.ToolResultBlockParam[] = calls.map((call) => {
+      for (const call of result.toolCalls) {
         const outcome = runServerTool(call.name, call.input);
-        return {
-          type: "tool_result",
-          tool_use_id: call.id,
+        working.push({
+          role: "tool",
+          toolCallId: call.id,
+          name: call.name,
           content: outcome.content,
-          ...(outcome.isError ? { is_error: true } : {}),
-        };
-      });
-
-      working.push({ role: "user", content: results });
+        });
+      }
     }
 
     return NextResponse.json(
@@ -153,14 +128,8 @@ export async function POST(request: Request) {
       { status: 504 },
     );
   } catch (error) {
-    if (error instanceof Anthropic.AuthenticationError) {
-      return NextResponse.json({ error: "ANTHROPIC_API_KEY is not valid." }, { status: 401 });
-    }
-    if (error instanceof Anthropic.RateLimitError) {
-      return NextResponse.json({ error: "Rate limited. Try again shortly." }, { status: 429 });
-    }
-    if (error instanceof Anthropic.APIError) {
-      return NextResponse.json({ error: `Assistant error: ${error.message}` }, { status: 502 });
+    if (error instanceof LlmError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     return NextResponse.json({ error: "The assistant is unavailable." }, { status: 502 });
   }

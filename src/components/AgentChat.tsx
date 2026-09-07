@@ -11,8 +11,11 @@ import { launchToken } from "@/lib/token";
 import { createFreeLaunch } from "@/lib/launchpad";
 import { rememberLaunch } from "@/lib/history";
 
-/** Mirrors Anthropic's MessageParam without importing the SDK into the browser. */
-type Message = { role: "user" | "assistant"; content: unknown };
+/** Mirrors the provider-neutral turn shape from src/lib/llm.ts. */
+type Turn =
+  | { role: "user"; text: string }
+  | { role: "assistant"; text: string; toolCalls?: { id: string; name: string; input: unknown }[] }
+  | { role: "tool"; toolCallId: string; name: string; content: string };
 
 type Proposal = {
   name: string;
@@ -32,7 +35,8 @@ export function AgentChat() {
   const router = useRouter();
   const { keypair, network, refreshBalance } = useWallet();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [provider, setProvider] = useState<string | null>(null);
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,7 +50,7 @@ export function AgentChat() {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [bubbles, pending, busy]);
 
-  async function send(next: Message[], echo?: string) {
+  async function send(next: Turn[], echo?: string) {
     setBusy(true);
     setError(null);
     if (echo) setBubbles((b) => [...b, { role: "you", text: echo }]);
@@ -55,17 +59,19 @@ export function AgentChat() {
       const response = await fetch("/api/ai/agent", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ turns: next }),
       });
       const body = (await response.json()) as {
-        messages?: Message[];
+        turns?: Turn[];
         reply?: string;
         pendingAction?: PendingAction;
+        provider?: string;
         error?: string;
       };
-      if (!response.ok || !body.messages) throw new Error(body.error ?? "Request failed.");
+      if (!response.ok || !body.turns) throw new Error(body.error ?? "Request failed.");
 
-      setMessages(body.messages);
+      setTurns(body.turns);
+      if (body.provider) setProvider(body.provider);
       if (body.reply) setBubbles((b) => [...b, { role: "assistant", text: body.reply! }]);
       setPending(body.pendingAction ?? null);
     } catch (err) {
@@ -80,18 +86,15 @@ export function AgentChat() {
     const text = input.trim();
     if (!text || busy) return;
     setInput("");
-    void send([...messages, { role: "user", content: text }], text);
+    void send([...turns, { role: "user", text }], text);
   }
 
   /** Hands the outcome back to the assistant so the conversation continues. */
   async function reportBack(summary: string) {
     if (!pending) return;
     await send([
-      ...messages,
-      {
-        role: "user",
-        content: [{ type: "tool_result", tool_use_id: pending.toolUseId, content: summary }],
-      },
+      ...turns,
+      { role: "tool", toolCallId: pending.toolUseId, name: pending.name, content: summary },
     ]);
   }
 
@@ -281,6 +284,7 @@ export function AgentChat() {
                 confirm — there is no path where it moves value on its own.
               </p>
               <div className="flex flex-wrap gap-2">
+                {provider ? <Tag>{provider}</Tag> : null}
                 <Tag tone="verify">
                   <span className="flex items-center gap-1.5">
                     <ShieldCheck className="h-3 w-3" />

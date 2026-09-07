@@ -77,10 +77,10 @@ export function Automation() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          messages: [
+          turns: [
             {
               role: "user",
-              content: `${config.brief}\n\nPropose exactly one token now by calling propose_launch. Do not ask me anything — this is an unattended run.`,
+              text: `${config.brief}\n\nPropose exactly one token now by calling propose_launch. Do not ask me anything — this is an unattended run.`,
             },
           ],
         }),

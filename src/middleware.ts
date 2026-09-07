@@ -18,7 +18,12 @@ export async function middleware(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
-  if (pathname === "/login" || pathname.startsWith("/api/auth")) {
+  // /t/<mint> is the one deliberately public route — it exists to be shared.
+  if (
+    pathname === "/login" ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/t/")
+  ) {
     return NextResponse.next();
   }
 
