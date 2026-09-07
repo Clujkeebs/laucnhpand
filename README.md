@@ -11,11 +11,24 @@ this app has no account system because it has exactly one user.
 
 | | |
 |---|---|
-| **Wallet** | Generate or import a Solana keypair. Encrypted at rest (AES-256-GCM, PBKDF2-SHA256, 600k iterations). Export to Phantom any time. Auto-locks after 15 minutes idle and on every page reload. |
-| **Launch** | Create an SPL mint, upload image + metadata to IPFS, mint the full supply to yourself, and optionally revoke the mint and freeze authorities in the same flow. |
-| **Liquidity** | Create a Raydium CPMM pool against SOL. Permanently lock LP so the liquidity can't be withdrawn. |
-| **Inspect** | Point at any mint and read its authorities, supply and top-holder concentration straight from the chain. |
-| **Dashboard** | Balances, USD portfolio value via Jupiter, and every token you've launched from this browser. |
+| **Ledger** | Balances, USD portfolio value via Jupiter, and every token you've issued from this browser. |
+| **Issue** | Create an SPL mint, upload image + metadata to IPFS, mint the full supply to yourself, and revoke the mint and freeze authorities in the same flow. |
+| **Market** | Create a Raydium CPMM pool against SOL. Permanently lock LP so the liquidity can't be withdrawn. |
+| **Examine** | Point at any mint and read its authorities, supply and holder concentration straight from the chain. |
+| **Custody** | Generate or import a Solana keypair. Encrypted at rest (AES-256-GCM, PBKDF2-SHA256, 600k iterations). Export to Phantom any time. Auto-locks after 15 minutes idle and on every page reload. |
+
+### The report
+
+Every issuance is graded live as you compose it, and any existing mint can be
+graded from the Examine desk. The report scores the things anyone evaluating
+your token can check for themselves — mint authority, freeze authority,
+metadata completeness, public presence, holder concentration — and states in
+plain language what each one signals.
+
+It does not predict whether a token will sell. Nothing can. It tells you what
+a buyer sees when they look, which is the part you control. Keeping both
+authorities drops a launch from the mid-80s to the high-20s and stamps it
+`HOSTILE`, because that is exactly how a scanner will read it.
 
 ## Setup
 
@@ -107,9 +120,22 @@ liquidity out from under buyers. Those aren't missing features — bundling,
 impersonation, and rug pulls are how people end up as defendants, and the
 tooling for them is not something this repo will grow.
 
+## Design
+
+Set like a printed prospectus rather than a dashboard: paper and ink, hairline
+rules, no floating cards or drop shadows, section plates numbered down the
+page. Display type is Instrument Serif, running text is Archivo, and every
+number, address and label is JetBrains Mono so figures line up in columns.
+
+All three faces are self-hosted from `public/fonts` (107 KB total, latin
+subsets only) — the app makes no external font requests. Paper and dark themes
+are both first-class; the toggle sits under the wordmark and the choice is
+remembered, with a pre-paint script so the page never flashes the wrong ground.
+
 ## Stack
 
-Next.js 15 (App Router) · TypeScript · Tailwind v4 · `@solana/web3.js` ·
+Next.js 15 (App Router) · TypeScript · Tailwind v4 · self-hosted webfonts ·
+`@solana/web3.js` ·
 `@solana/spl-token` · Metaplex Umi + `mpl-token-metadata` ·
 `@raydium-io/raydium-sdk-v2` · Jupiter price API
 
@@ -118,17 +144,17 @@ Next.js 15 (App Router) · TypeScript · Tailwind v4 · `@solana/web3.js` ·
 ```
 src/
   app/
-    page.tsx           dashboard
-    launch/            token creation
+    page.tsx           ledger
+    launch/            issuance
     liquidity/         pool creation + LP locking
-    inspect/           mint + holder analysis
-    wallet/            key management
+    inspect/           examination desk
+    wallet/            custody
     login/             password gate
     api/
       auth/            session cookie issue + clear
       market/          Jupiter price + token metadata proxy
       upload/          IPFS pinning for image + metadata JSON
-  components/          Shell, WalletGate, UI primitives
+  components/          Shell, WalletGate, ReportSheet, UI primitives
   lib/
     keystore.ts        browser-side encryption
     wallet.tsx         wallet context, auto-lock
@@ -136,6 +162,8 @@ src/
     pool.ts            Raydium CPMM
     portfolio.ts       balances, valuation, holder concentration
     amount.ts          decimal <-> base unit conversion
+    report.ts          token grading, planned and observed
+    theme.tsx          paper/dark switching
     auth.ts            HMAC session tokens
   middleware.ts        route gate
 tests/                 unit tests + Playwright walkthrough

@@ -35,7 +35,7 @@ console.log("keystore keys:", Object.keys(stored).join(","));
 console.log("has plaintext secretKey field:", "secretKey" in stored);
 
 // 4. Lock, then verify signing pages gate correctly
-await page.click('button:has-text("Lock")');
+await page.click('button:has-text("Seal")');
 await page.goto(`${base}/launch`);
 await page.waitForSelector("text=Wallet locked", { timeout: 10000 });
 console.log("launch page gated when locked OK");
@@ -49,7 +49,7 @@ console.log("launch form renders OK");
 await shot("05-launch-form");
 
 // 6. Client-side validation should stop an empty submit
-await page.click('button:has-text("Launch token")');
+await page.click('button:has-text("Issue token")');
 await page.waitForSelector("text=Name is required", { timeout: 10000 });
 console.log("validation blocks empty launch OK");
 
@@ -59,7 +59,7 @@ await page.waitForSelector("text=Wallet locked", { timeout: 10000 });
 console.log("reload re-locks the wallet OK");
 await page.fill('input[type=password]', "a-very-strong-passphrase");
 await page.click('button:has-text("Unlock")');
-await page.waitForSelector("text=Create pool", { timeout: 15000 });
+await page.waitForSelector('button:has-text("Create pool")', { timeout: 15000 });
 await shot("06-liquidity");
 console.log("/liquidity renders OK");
 
@@ -70,7 +70,7 @@ console.log("/inspect renders OK");
 
 // 8. Inspect rejects a bad address without touching the network
 await page.fill("input", "not-a-real-mint");
-await page.click('button:has-text("Check")');
+await page.click('button:has-text("Examine")');
 await page.waitForSelector("text=isn't a valid mint address", { timeout: 10000 });
 console.log("inspect rejects invalid mint OK");
 

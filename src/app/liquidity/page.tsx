@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Droplets, Lock } from "lucide-react";
 import { Shell } from "@/components/Shell";
 import { WalletGate } from "@/components/WalletGate";
-import { Alert, Button, Card, Copyable, ExternalRef, Field, Spinner } from "@/components/ui";
+import { Button, Copyable, Datum, ExternalRef, Field, Note, Panel, Spinner } from "@/components/ui";
 import { useWallet } from "@/lib/wallet";
 import { explorerUrl } from "@/lib/solana";
 import { createLiquidityPool, isValidMint, lockLiquidity } from "@/lib/pool";
@@ -14,26 +14,19 @@ import { listLaunches, updateLaunch } from "@/lib/history";
 
 export default function LiquidityPage() {
   return (
-    <Shell>
-      <h1 className="mb-1 text-xl font-semibold text-white">Liquidity</h1>
-      <p className="mb-7 text-sm text-ink-400">
-        Pair your token with SOL on Raydium so it has a price and can be traded.
-      </p>
+    <Shell
+      title="Open a market"
+      standfirst="Pairs your token with SOL on Raydium so it has a price and can be traded. The SOL side is real capital leaving your wallet."
+    >
       <WalletGate>
         <Suspense fallback={null}>
-          <LiquidityPanels />
+          <div className="grid max-w-6xl gap-11 lg:grid-cols-2">
+            <CreatePool />
+            <LockLp />
+          </div>
         </Suspense>
       </WalletGate>
     </Shell>
-  );
-}
-
-function LiquidityPanels() {
-  return (
-    <div className="grid max-w-5xl gap-5 lg:grid-cols-2">
-      <CreatePool />
-      <LockLp />
-    </div>
   );
 }
 
@@ -53,7 +46,7 @@ function CreatePool() {
     null,
   );
 
-  // Decimals have to match the mint exactly, so read them from chain rather than trusting input.
+  // Decimals must match the mint exactly, so read them from chain rather than trusting input.
   useEffect(() => {
     if (!isValidMint(mint)) {
       setDecimals(null);
@@ -61,12 +54,8 @@ function CreatePool() {
     }
     let cancelled = false;
     fetchMintStatus(network, mint)
-      .then((status) => {
-        if (!cancelled) setDecimals(status.decimals);
-      })
-      .catch(() => {
-        if (!cancelled) setDecimals(null);
-      });
+      .then((status) => !cancelled && setDecimals(status.decimals))
+      .catch(() => !cancelled && setDecimals(null));
     return () => {
       cancelled = true;
     };
@@ -107,40 +96,35 @@ function CreatePool() {
 
   if (result) {
     return (
-      <Card title="Pool created">
+      <Panel index="01" eyebrow="Open" title="The market exists">
         <div className="space-y-4">
           <div>
-            <p className="mb-1.5 text-xs text-ink-400">Pool ID</p>
+            <p className="eyebrow mb-1.5">Pool</p>
             <Copyable value={result.poolId} />
           </div>
           <div>
-            <p className="mb-1.5 text-xs text-ink-400">LP mint</p>
+            <p className="eyebrow mb-1.5">LP mint</p>
             <Copyable value={result.lpMint} />
           </div>
-          <ExternalRef href={explorerUrl("tx", result.signature, network)}>
-            View transaction
-          </ExternalRef>
-          <Alert tone="info">
-            The SOL you just added is now buyable supply. Anyone can trade against this pool, and
-            the price moves with them.
-          </Alert>
-          <Button variant="ghost" onClick={() => setResult(null)}>
-            Create another
+          <ExternalRef href={explorerUrl("tx", result.signature, network)}>Transaction</ExternalRef>
+          <Note>
+            The SOL you added is now buyable supply. Anyone can trade against this pool and the
+            price moves with them.
+          </Note>
+          <Button variant="quiet" onClick={() => setResult(null)}>
+            Open another
           </Button>
         </div>
-      </Card>
+      </Panel>
     );
   }
 
   return (
-    <Card title="Create pool" description="Raydium CPMM, paired against SOL.">
-      <form onSubmit={submit} className="space-y-4">
-        <Field
-          label="Token mint"
-          hint={decimals === null ? undefined : `${decimals} decimals`}
-        >
+    <Panel index="01" eyebrow="Pool" title="Create" note="Raydium CPMM, paired against SOL.">
+      <form onSubmit={submit} className="space-y-6">
+        <Field label="Token mint" hint={decimals === null ? undefined : `${decimals} decimals`}>
           <input
-            className="field font-mono text-xs"
+            className="ctl"
             value={mint}
             onChange={(event) => setMint(event.target.value.trim())}
             placeholder="Mint address"
@@ -149,10 +133,10 @@ function CreatePool() {
 
         <MintPicker onPick={setMint} />
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           <Field label="Token amount">
             <input
-              className="field tabular-nums"
+              className="ctl"
               value={tokenAmount}
               onChange={(event) => setTokenAmount(event.target.value)}
               inputMode="decimal"
@@ -161,7 +145,7 @@ function CreatePool() {
           </Field>
           <Field label="SOL amount">
             <input
-              className="field tabular-nums"
+              className="ctl"
               value={solAmount}
               onChange={(event) => setSolAmount(event.target.value)}
               inputMode="decimal"
@@ -171,28 +155,24 @@ function CreatePool() {
         </div>
 
         {impliedPrice ? (
-          <p className="text-xs text-ink-400">
-            Opening price:{" "}
-            <span className="font-mono text-ink-200">{impliedPrice.toExponential(4)} SOL</span> per
-            token.
-          </p>
+          <dl>
+            <Datum label="Opening price, SOL">{impliedPrice.toExponential(4)}</Datum>
+          </dl>
         ) : null}
 
-        <Alert tone="warn">
+        <Note tone="flag">
           The SOL side is real money that leaves your wallet. You get it back only by withdrawing
           liquidity — which, once people have bought in, means selling into them.
-        </Alert>
+        </Note>
 
-        {error ? <Alert tone="danger">{error}</Alert> : null}
+        {error ? <Note tone="signal">{error}</Note> : null}
 
         <Button type="submit" disabled={busy} className="w-full">
-          <span className="flex items-center justify-center gap-2">
-            {busy ? <Spinner /> : <Droplets className="h-4 w-4" />}
-            {busy ? "Creating pool…" : "Create pool"}
-          </span>
+          {busy ? <Spinner /> : <Droplets className="h-3.5 w-3.5" />}
+          {busy ? "Creating pool…" : "Create pool"}
         </Button>
       </form>
-    </Card>
+    </Panel>
   );
 }
 
@@ -221,23 +201,25 @@ function LockLp() {
   }
 
   return (
-    <Card
+    <Panel
+      index="02"
+      eyebrow="Commitment"
       title="Lock LP"
-      description="Permanently commit liquidity so it can't be withdrawn."
+      note="Permanently commits liquidity so it cannot be withdrawn."
     >
       {signature ? (
-        <div className="space-y-3">
-          <Alert tone="good">Liquidity locked. This cannot be undone.</Alert>
-          <ExternalRef href={explorerUrl("tx", signature, network)}>View transaction</ExternalRef>
-          <Button variant="ghost" onClick={() => setSignature(null)}>
+        <div className="space-y-4">
+          <Note tone="verify">Liquidity locked. This cannot be undone.</Note>
+          <ExternalRef href={explorerUrl("tx", signature, network)}>Transaction</ExternalRef>
+          <Button variant="quiet" onClick={() => setSignature(null)}>
             Lock more
           </Button>
         </div>
       ) : (
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-6">
           <Field label="Pool ID">
             <input
-              className="field font-mono text-xs"
+              className="ctl"
               value={poolId}
               onChange={(event) => setPoolId(event.target.value.trim())}
               placeholder="Pool address"
@@ -245,29 +227,27 @@ function LockLp() {
           </Field>
           <Field label="LP amount to lock">
             <input
-              className="field tabular-nums"
+              className="ctl"
               value={lpAmount}
               onChange={(event) => setLpAmount(event.target.value)}
               inputMode="decimal"
             />
           </Field>
 
-          <Alert tone="info">
+          <Note>
             Locked liquidity is the difference between a pool people will buy into and one they
             won&apos;t. It is also irreversible: that SOL is not coming back to you.
-          </Alert>
+          </Note>
 
-          {error ? <Alert tone="danger">{error}</Alert> : null}
+          {error ? <Note tone="signal">{error}</Note> : null}
 
-          <Button type="submit" variant="ghost" disabled={busy} className="w-full">
-            <span className="flex items-center justify-center gap-2">
-              {busy ? <Spinner /> : <Lock className="h-4 w-4" />}
-              {busy ? "Locking…" : "Lock liquidity"}
-            </span>
+          <Button type="submit" variant="quiet" disabled={busy} className="w-full">
+            {busy ? <Spinner /> : <Lock className="h-3.5 w-3.5" />}
+            {busy ? "Locking…" : "Lock liquidity"}
           </Button>
         </form>
       )}
-    </Card>
+    </Panel>
   );
 }
 
@@ -282,13 +262,14 @@ function MintPicker({ onPick }: { onPick: (mint: string) => void }) {
   if (launches.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap items-baseline gap-3">
+      <span className="eyebrow">Yours</span>
       {launches.slice(0, 6).map((entry) => (
         <button
           key={entry.mint}
           type="button"
           onClick={() => onPick(entry.mint)}
-          className="rounded-md bg-ink-800 px-2 py-1 text-[11px] text-ink-300 transition hover:bg-ink-700 hover:text-white"
+          className="data text-[11px] underline decoration-rule underline-offset-4 hover:decoration-ink"
         >
           {entry.symbol}
         </button>

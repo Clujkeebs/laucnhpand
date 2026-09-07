@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-import { Lock } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -36,46 +34,42 @@ function LoginForm() {
   }
 
   return (
-    <form onSubmit={submit} className="card w-full max-w-sm p-8">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="rounded-lg bg-mint-900 p-2">
-          <Lock className="h-5 w-5 text-mint-400" />
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold text-white">Launchpad</h1>
-          <p className="text-xs text-ink-400">Private. One user.</p>
-        </div>
+    <form onSubmit={submit} className="w-full max-w-[380px]">
+      <p className="eyebrow mb-3">Solana · Issuance desk</p>
+      <h1 className="display mb-1 text-[56px]">Launchpad</h1>
+      <p className="annot mb-10">One key, one operator, one door.</p>
+
+      <div className="border-t-[1.5px] border-[color:var(--rule-hard)] pt-6">
+        <label className="eyebrow mb-2 block" htmlFor="password">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          autoFocus
+          autoComplete="current-password"
+          className="ctl"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+
+        {error ? <p className="mt-3 text-[12px] text-signal">{error}</p> : null}
+
+        <button
+          type="submit"
+          disabled={busy || password.length === 0}
+          className="btn mt-7 w-full"
+        >
+          {busy ? "Checking…" : "Enter"}
+        </button>
       </div>
-
-      <label className="mb-2 block text-xs font-medium text-ink-300" htmlFor="password">
-        Password
-      </label>
-      <input
-        id="password"
-        type="password"
-        autoFocus
-        autoComplete="current-password"
-        className="field font-mono"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-      />
-
-      {error ? <p className="mt-3 text-xs text-danger-500">{error}</p> : null}
-
-      <button
-        type="submit"
-        disabled={busy || password.length === 0}
-        className="mt-5 w-full rounded-lg bg-mint-500 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-mint-400 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {busy ? "Checking…" : "Unlock"}
-      </button>
     </form>
   );
 }
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
+    <main className="flex min-h-screen items-center justify-center px-6">
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>

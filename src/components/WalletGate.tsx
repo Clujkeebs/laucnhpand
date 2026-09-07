@@ -2,9 +2,8 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { KeyRound } from "lucide-react";
 import { useWallet } from "@/lib/wallet";
-import { Alert, Button, Card, Field } from "./ui";
+import { Button, Field, Note, Panel } from "./ui";
 
 /**
  * Renders children only when the wallet is unlocked in memory. Everything that
@@ -21,11 +20,16 @@ export function WalletGate({ children }: { children: ReactNode }) {
 
   if (!keystore) {
     return (
-      <Card title="No wallet yet" description="Create or import one before you can sign anything.">
-        <Link href="/wallet">
-          <Button>Set up wallet</Button>
-        </Link>
-      </Card>
+      <div className="max-w-xl">
+        <Panel index="—" eyebrow="Blocked" title="No wallet on this device">
+          <p className="mb-6 text-[13.5px] text-ink-soft">
+            Nothing can be signed until a key exists here.
+          </p>
+          <Link href="/wallet">
+            <Button>Set up custody</Button>
+          </Link>
+        </Panel>
+      </div>
     );
   }
 
@@ -44,28 +48,29 @@ export function WalletGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Card
-      title="Wallet locked"
-      description="Enter your passphrase to decrypt the key for this session."
-    >
-      <form onSubmit={submit} className="max-w-sm space-y-4">
-        <Field label="Passphrase">
-          <input
-            type="password"
-            autoFocus
-            className="field font-mono"
-            value={passphrase}
-            onChange={(event) => setPassphrase(event.target.value)}
-          />
-        </Field>
-        {error ? <Alert tone="danger">{error}</Alert> : null}
-        <Button type="submit" disabled={busy || !passphrase}>
-          <span className="flex items-center gap-2">
-            <KeyRound className="h-3.5 w-3.5" />
+    <div className="max-w-md">
+      <Panel
+        index="—"
+        eyebrow="Sealed"
+        title="Wallet locked"
+        note="The key is decrypted into memory for this session only."
+      >
+        <form onSubmit={submit} className="space-y-6">
+          <Field label="Passphrase">
+            <input
+              type="password"
+              autoFocus
+              className="ctl"
+              value={passphrase}
+              onChange={(event) => setPassphrase(event.target.value)}
+            />
+          </Field>
+          {error ? <Note tone="signal">{error}</Note> : null}
+          <Button type="submit" disabled={busy || !passphrase}>
             {busy ? "Decrypting…" : "Unlock"}
-          </span>
-        </Button>
-      </form>
-    </Card>
+          </Button>
+        </form>
+      </Panel>
+    </div>
   );
 }

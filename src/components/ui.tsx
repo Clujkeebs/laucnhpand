@@ -1,30 +1,44 @@
 "use client";
 
 import { useState, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { Check, Copy, ExternalLink } from "lucide-react";
+import { ArrowUpRight, Check, Copy } from "lucide-react";
 
-export function Card({
+/**
+ * A ruled section. `index` prints a plate number in the margin, the way a
+ * spec sheet numbers its sections.
+ */
+export function Panel({
+  index,
+  eyebrow,
   title,
-  description,
-  action,
+  note,
+  aside,
   children,
   className = "",
 }: {
+  index?: string;
+  eyebrow?: string;
   title?: string;
-  description?: string;
-  action?: ReactNode;
+  note?: string;
+  aside?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <section className={`card p-6 ${className}`}>
-      {title ? (
-        <header className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold text-white">{title}</h2>
-            {description ? <p className="mt-1 text-xs text-ink-400">{description}</p> : null}
+    <section className={`panel ${className}`}>
+      {title || eyebrow ? (
+        <header className="mb-5 flex items-start justify-between gap-5">
+          <div className="flex gap-3">
+            {index ? (
+              <span className="data mt-[3px] text-[11px] font-medium text-ink-faint">{index}</span>
+            ) : null}
+            <div>
+              {eyebrow ? <p className="eyebrow mb-1.5">{eyebrow}</p> : null}
+              {title ? <h2 className="display text-[26px]">{title}</h2> : null}
+              {note ? <p className="annot mt-1.5 max-w-prose">{note}</p> : null}
+            </div>
           </div>
-          {action}
+          {aside ? <div className="shrink-0">{aside}</div> : null}
         </header>
       ) : null}
       {children}
@@ -33,22 +47,12 @@ export function Card({
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "ghost" | "danger";
+  variant?: "solid" | "quiet" | "warn";
 };
 
-export function Button({ variant = "primary", className = "", ...props }: ButtonProps) {
-  const styles = {
-    primary: "bg-mint-500 text-ink-950 hover:bg-mint-400",
-    ghost: "border border-ink-600 text-ink-200 hover:border-ink-400 hover:text-white",
-    danger: "border border-danger-500/40 text-danger-500 hover:bg-danger-500/10",
-  }[variant];
-
-  return (
-    <button
-      {...props}
-      className={`rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${styles} ${className}`}
-    />
-  );
+export function Button({ variant = "solid", className = "", ...props }: ButtonProps) {
+  const variantClass = { solid: "", quiet: "btn-quiet", warn: "btn-warn" }[variant];
+  return <button {...props} className={`btn ${variantClass} ${className}`} />;
 }
 
 export function Field({
@@ -62,27 +66,38 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-medium text-ink-300">{label}</span>
+      <span className="eyebrow mb-2 block">{label}</span>
       {children}
-      {hint ? <span className="mt-1.5 block text-xs text-ink-400">{hint}</span> : null}
+      {hint ? <span className="mt-1.5 block text-[11px] text-ink-faint">{hint}</span> : null}
     </label>
   );
 }
 
-export function Stat({
+/** Label, dotted leader, value — the spec-sheet row. */
+export function Datum({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="datum">
+      <dt>{label}</dt>
+      <span className="leader" aria-hidden />
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+export function Figure({
   label,
   value,
-  sub,
+  note,
 }: {
   label: string;
   value: ReactNode;
-  sub?: ReactNode;
+  note?: ReactNode;
 }) {
   return (
-    <div className="card p-5">
-      <p className="text-xs font-medium text-ink-400">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tabular-nums text-white">{value}</p>
-      {sub ? <p className="mt-1 text-xs text-ink-400">{sub}</p> : null}
+    <div className="border-t border-rule pt-3">
+      <p className="eyebrow">{label}</p>
+      <p className="data mt-2 text-[28px] leading-none">{value}</p>
+      {note ? <p className="mt-2 text-[11px] text-ink-faint">{note}</p> : null}
     </div>
   );
 }
@@ -92,72 +107,73 @@ export function Copyable({ value, label }: { value: string; label?: string }) {
   return (
     <button
       type="button"
+      title="Copy"
       onClick={() => {
         void navigator.clipboard.writeText(value);
         setCopied(true);
         setTimeout(() => setCopied(false), 1200);
       }}
-      className="inline-flex items-center gap-1.5 font-mono text-xs text-ink-300 transition hover:text-mint-400"
-      title="Copy"
+      className="data group inline-flex items-center gap-2 text-[12px] text-ink"
     >
-      {label ?? value}
-      {copied ? <Check className="h-3.5 w-3.5 text-mint-400" /> : <Copy className="h-3.5 w-3.5" />}
+      <span className="underline decoration-rule decoration-1 underline-offset-4 group-hover:decoration-ink">
+        {label ?? value}
+      </span>
+      {copied ? (
+        <Check className="h-3 w-3 text-verify" />
+      ) : (
+        <Copy className="h-3 w-3 text-ink-faint" />
+      )}
     </button>
   );
 }
 
 export function ExternalRef({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-1 text-xs text-mint-400 transition hover:underline"
-    >
+    <a href={href} target="_blank" rel="noreferrer" className="eyebrow inline-flex items-center gap-1 hover:text-ink">
       {children}
-      <ExternalLink className="h-3 w-3" />
+      <ArrowUpRight className="h-3 w-3" />
     </a>
   );
 }
 
-export function Alert({
-  tone = "info",
-  children,
-}: {
-  tone?: "info" | "warn" | "danger" | "good";
-  children: ReactNode;
-}) {
-  const styles = {
-    info: "border-ink-600 bg-ink-850 text-ink-300",
-    warn: "border-warn-500/30 bg-warn-500/5 text-warn-500",
-    danger: "border-danger-500/30 bg-danger-500/5 text-danger-500",
-    good: "border-mint-500/30 bg-mint-900/40 text-mint-400",
-  }[tone];
-  return (
-    <div className={`rounded-lg border px-4 py-3 text-xs leading-relaxed ${styles}`}>{children}</div>
-  );
+const TONES = {
+  plain: "text-ink-soft",
+  verify: "text-verify",
+  flag: "text-flag",
+  signal: "text-signal",
+} as const;
+
+export type Tone = keyof typeof TONES;
+
+export function Tag({ tone = "plain", children }: { tone?: Tone; children: ReactNode }) {
+  return <span className={`tag ${TONES[tone]}`}>{children}</span>;
 }
 
-export function Badge({
-  tone = "neutral",
-  children,
-}: {
-  tone?: "neutral" | "good" | "warn" | "danger";
-  children: ReactNode;
-}) {
-  const styles = {
-    neutral: "bg-ink-800 text-ink-300",
-    good: "bg-mint-900 text-mint-400",
-    warn: "bg-warn-500/10 text-warn-500",
-    danger: "bg-danger-500/10 text-danger-500",
+export function Stamp({ tone = "plain", children }: { tone?: Tone; children: ReactNode }) {
+  return <span className={`stamp ${TONES[tone]}`}>{children}</span>;
+}
+
+/** A margin note, set as a hanging italic paragraph beside a rule. */
+export function Note({ tone = "plain", children }: { tone?: Tone; children: ReactNode }) {
+  const border = {
+    plain: "border-rule",
+    verify: "border-verify",
+    flag: "border-flag",
+    signal: "border-signal",
   }[tone];
   return (
-    <span className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${styles}`}>{children}</span>
+    <div className={`border-l-2 pl-3.5 ${border}`}>
+      <p className={`annot ${tone === "plain" ? "" : TONES[tone]}`}>{children}</p>
+    </div>
   );
 }
 
 export function Spinner() {
   return (
-    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink-600 border-t-mint-400" />
+    <span className="inline-block h-3 w-3 animate-spin border-[1.5px] border-current border-t-transparent" />
   );
+}
+
+export function Rule({ className = "" }: { className?: string }) {
+  return <hr className={`border-0 border-t border-rule ${className}`} />;
 }

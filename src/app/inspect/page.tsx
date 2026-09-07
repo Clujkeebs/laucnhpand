@@ -2,22 +2,23 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, CheckCircle2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Shell } from "@/components/Shell";
-import { Alert, Badge, Button, Card, Copyable, ExternalRef, Spinner } from "@/components/ui";
+import { ReportSheet } from "@/components/ReportSheet";
+import { Button, Copyable, Datum, ExternalRef, Note, Panel, Spinner } from "@/components/ui";
 import { useWallet } from "@/lib/wallet";
 import { explorerUrl, shortAddress } from "@/lib/solana";
 import { fetchMintStatus, type MintStatus } from "@/lib/token";
 import { fetchTopHolders, type HolderRow } from "@/lib/portfolio";
+import { reportObservedToken, type Report } from "@/lib/report";
 import { isValidMint } from "@/lib/pool";
 
 export default function InspectPage() {
   return (
-    <Shell>
-      <h1 className="mb-1 text-xl font-semibold text-white">Inspect a token</h1>
-      <p className="mb-7 text-sm text-ink-400">
-        Authorities, supply and holder concentration — read straight off the chain.
-      </p>
+    <Shell
+      title="Examine"
+      standfirst="Point at any mint on this network and read what it actually is — authorities, supply, and who holds it. Run it on other people's tokens, and on your own before anyone else does."
+    >
       <Suspense fallback={null}>
         <Inspector />
       </Suspense>
@@ -31,6 +32,7 @@ function Inspector() {
   const [query, setQuery] = useState(params.get("mint") ?? "");
   const [status, setStatus] = useState<MintStatus | null>(null);
   const [holders, setHolders] = useState<{ rows: HolderRow[]; supply: number } | null>(null);
+  const [report, setReport] = useState<Report | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +46,7 @@ function Inspector() {
       setError(null);
       setStatus(null);
       setHolders(null);
+      setReport(null);
       try {
         const [mintStatus, holderData] = await Promise.all([
           fetchMintStatus(network, mint),
@@ -51,6 +54,17 @@ function Inspector() {
         ]);
         setStatus(mintStatus);
         setHolders(holderData);
+        setReport(
+          reportObservedToken({
+            mintAuthority: mintStatus.mintAuthority,
+            freezeAuthority: mintStatus.freezeAuthority,
+            hasMetadata: Boolean(mintStatus.name),
+            topTenShare: holderData
+              ? holderData.rows.slice(0, 10).reduce((sum, row) => sum + row.share, 0)
+              : null,
+            largestShare: holderData?.rows[0]?.share ?? null,
+          }),
+        );
       } catch (err) {
         setError(err instanceof Error ? err.message : "Lookup failed.");
       } finally {
@@ -66,139 +80,123 @@ function Inspector() {
   }, [params, run]);
 
   const uiSupply = status ? Number(status.supply) / 10 ** status.decimals : 0;
-  const topTenShare = holders
-    ? holders.rows.slice(0, 10).reduce((sum, row) => sum + row.share, 0)
-    : 0;
 
   return (
-    <div className="max-w-4xl space-y-5">
-      <Card>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void run(query.trim());
-          }}
-          className="flex gap-2"
-        >
+    <div className="max-w-6xl">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void run(query.trim());
+        }}
+        className="mb-10 flex max-w-2xl items-end gap-4"
+      >
+        <div className="flex-1">
+          <span className="eyebrow mb-2 block">Mint address</span>
           <input
-            className="field font-mono text-xs"
+            className="ctl"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Paste any SPL mint address"
           />
-          <Button type="submit" disabled={busy}>
-            <span className="flex items-center gap-2">
-              {busy ? <Spinner /> : <Search className="h-3.5 w-3.5" />}
-              Check
-            </span>
-          </Button>
-        </form>
-        {error ? (
-          <div className="mt-3">
-            <Alert tone="danger">{error}</Alert>
-          </div>
-        ) : null}
-      </Card>
+        </div>
+        <Button type="submit" disabled={busy}>
+          {busy ? <Spinner /> : <Search className="h-3.5 w-3.5" />}
+          Examine
+        </Button>
+      </form>
 
-      {status ? (
-        <>
-          <Card
-            title={status.name ? `${status.name} (${status.symbol})` : "Unnamed token"}
-            action={<ExternalRef href={explorerUrl("token", status.mint, network)}>Solscan</ExternalRef>}
-          >
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <p className="mb-1.5 text-xs text-ink-400">Mint</p>
-                <Copyable value={status.mint} label={shortAddress(status.mint, 8)} />
-              </div>
-              <div>
-                <p className="mb-1.5 text-xs text-ink-400">Supply</p>
-                <p className="font-mono text-sm text-ink-200">
+      {error ? (
+        <div className="max-w-2xl">
+          <Note tone="signal">{error}</Note>
+        </div>
+      ) : null}
+
+      {status && report ? (
+        <div className="grid gap-10 lg:grid-cols-[1.15fr_1fr]">
+          <div className="space-y-11">
+            <Panel
+              index="01"
+              eyebrow="Subject"
+              title={status.name ? `${status.name} · ${status.symbol}` : "Unnamed token"}
+              aside={
+                <ExternalRef href={explorerUrl("token", status.mint, network)}>Solscan</ExternalRef>
+              }
+            >
+              <dl className="space-y-2">
+                <Datum label="Mint">{shortAddress(status.mint, 6)}</Datum>
+                <Datum label="Supply">
                   {uiSupply.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                </p>
+                </Datum>
+                <Datum label="Decimals">{status.decimals}</Datum>
+                <Datum label="Mint authority">
+                  {status.mintAuthority ? shortAddress(status.mintAuthority, 4) : "revoked"}
+                </Datum>
+                <Datum label="Freeze authority">
+                  {status.freezeAuthority ? shortAddress(status.freezeAuthority, 4) : "revoked"}
+                </Datum>
+              </dl>
+              <div className="mt-5">
+                <Copyable value={status.mint} label="Copy mint address" />
               </div>
-            </div>
+            </Panel>
 
-            <div className="mt-6 space-y-3">
-              <Signal
-                ok={status.mintAuthority === null}
-                okText="Mint authority revoked — supply is fixed"
-                badText={`Mint authority still active (${shortAddress(status.mintAuthority ?? "", 4)}). More tokens can be created at any time.`}
-              />
-              <Signal
-                ok={status.freezeAuthority === null}
-                okText="Freeze authority revoked — accounts can't be frozen"
-                badText={`Freeze authority still active (${shortAddress(status.freezeAuthority ?? "", 4)}). Holder accounts can be frozen, blocking sells.`}
-              />
-              {holders ? (
-                <Signal
-                  ok={topTenShare < 0.5}
-                  okText={`Top 10 accounts hold ${(topTenShare * 100).toFixed(1)}% of supply`}
-                  badText={`Top 10 accounts hold ${(topTenShare * 100).toFixed(1)}% of supply — highly concentrated`}
-                />
-              ) : null}
-            </div>
-          </Card>
-
-          {holders && holders.rows.length > 0 ? (
-            <Card title="Top holders" description="Largest token accounts, by balance.">
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+            {holders && holders.rows.length > 0 ? (
+              <Panel index="02" eyebrow="Distribution" title="Who holds it">
+                <table className="w-full">
                   <thead>
-                    <tr className="border-b border-ink-700 text-left text-ink-400">
-                      <th className="pb-2 font-medium">#</th>
-                      <th className="pb-2 font-medium">Owner</th>
-                      <th className="pb-2 text-right font-medium">Amount</th>
-                      <th className="pb-2 text-right font-medium">Share</th>
+                    <tr className="border-b-[1.5px] border-[color:var(--rule-hard)]">
+                      <th className="eyebrow pb-2 text-left">#</th>
+                      <th className="eyebrow pb-2 text-left">Owner</th>
+                      <th className="eyebrow pb-2 text-right">Balance</th>
+                      <th className="eyebrow pb-2 text-right">Share</th>
                     </tr>
                   </thead>
                   <tbody>
                     {holders.rows.map((row, index) => (
-                      <tr key={`${row.owner}-${index}`} className="border-b border-ink-800/60">
-                        <td className="py-2 text-ink-400">{index + 1}</td>
+                      <tr key={`${row.owner}-${index}`} className="border-b border-rule">
+                        <td className="data py-2 text-[11px] text-ink-faint">
+                          {String(index + 1).padStart(2, "0")}
+                        </td>
                         <td className="py-2">
                           <ExternalRef href={explorerUrl("address", row.owner, network)}>
-                            {shortAddress(row.owner, 6)}
+                            {shortAddress(row.owner, 5)}
                           </ExternalRef>
                         </td>
-                        <td className="py-2 text-right font-mono tabular-nums text-ink-200">
+                        <td className="data py-2 text-right text-[12px]">
                           {row.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </td>
-                        <td className="py-2 text-right font-mono tabular-nums text-ink-200">
+                        <td className="data py-2 text-right text-[12px]">
                           {(row.share * 100).toFixed(2)}%
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </Card>
-          ) : null}
-        </>
+                <div className="mt-5">
+                  <Note>
+                    Liquidity pool accounts show up in this list too — a large pool balance is not
+                    the same as one wallet holding the float.
+                  </Note>
+                </div>
+              </Panel>
+            ) : null}
+          </div>
+
+          <div className="lg:sticky lg:top-12 lg:self-start">
+            <ReportSheet report={report} heading="Examination report" />
+          </div>
+        </div>
       ) : null}
 
-      {!status && !busy ? (
-        <Alert tone="info">
-          These three checks — mint authority, freeze authority, holder concentration — catch most
-          of what goes wrong with a token. Run them on anything before you put money in, and expect
-          people to run them on yours.
-        </Alert>
+      {!status && !busy && !error ? (
+        <div className="max-w-2xl">
+          <Note>
+            Mint authority, freeze authority and holder concentration catch most of what goes
+            wrong with a token. They take one lookup and they are the same three things a buyer
+            will check on yours.
+          </Note>
+        </div>
       ) : null}
-    </div>
-  );
-}
-
-function Signal({ ok, okText, badText }: { ok: boolean; okText: string; badText: string }) {
-  return (
-    <div className="flex items-start gap-2.5">
-      {ok ? (
-        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-mint-400" />
-      ) : (
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warn-500" />
-      )}
-      <p className={`text-xs leading-relaxed ${ok ? "text-ink-300" : "text-warn-500"}`}>
-        {ok ? okText : badText}
-      </p>
     </div>
   );
 }

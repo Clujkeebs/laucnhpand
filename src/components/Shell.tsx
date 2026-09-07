@@ -2,34 +2,36 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  Coins,
-  Droplets,
-  LayoutDashboard,
-  LogOut,
-  Search,
-  Wallet as WalletIcon,
-  Lock as LockIcon,
-} from "lucide-react";
-import { useWallet } from "@/lib/wallet";
-import { shortAddress, usingPublicRpc } from "@/lib/solana";
+import { Moon, Sun } from "lucide-react";
 import type { ReactNode } from "react";
+import { useWallet } from "@/lib/wallet";
+import { useTheme } from "@/lib/theme";
+import { shortAddress, usingPublicRpc } from "@/lib/solana";
+import { Datum } from "./ui";
 
 const NAV = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/launch", label: "Launch", icon: Coins },
-  { href: "/liquidity", label: "Liquidity", icon: Droplets },
-  { href: "/inspect", label: "Inspect", icon: Search },
-  { href: "/wallet", label: "Wallet", icon: WalletIcon },
+  { href: "/", plate: "00", label: "Ledger" },
+  { href: "/launch", plate: "01", label: "Issue" },
+  { href: "/liquidity", plate: "02", label: "Market" },
+  { href: "/inspect", plate: "03", label: "Examine" },
+  { href: "/wallet", plate: "04", label: "Custody" },
 ];
 
-export function Shell({ children }: { children: ReactNode }) {
+export function Shell({
+  title,
+  standfirst,
+  children,
+}: {
+  title: string;
+  standfirst?: string;
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
-  const { network, setNetwork, publicKey, keypair, balanceSol, lock } = useWallet();
+  const { theme, toggle } = useTheme();
+  const { network, setNetwork, publicKey, keypair, balanceSol } = useWallet();
 
   async function signOut() {
-    lock();
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
@@ -37,96 +39,95 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen lg:flex">
-      <aside className="border-b border-ink-700 lg:h-screen lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r">
-        <div className="flex items-center justify-between p-5 lg:block">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="rounded-lg bg-mint-900 p-1.5">
-              <Coins className="h-4 w-4 text-mint-400" />
-            </div>
-            <span className="text-sm font-semibold text-white">Launchpad</span>
+      <aside className="shrink-0 border-b border-rule px-6 py-5 lg:h-screen lg:w-[248px] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-7 lg:py-8">
+        <div className="flex items-start justify-between lg:block">
+          <Link href="/" className="block">
+            <span className="display block text-[30px] leading-none">Launchpad</span>
+            <span className="eyebrow mt-2 block">Solana · Issuance desk</span>
           </Link>
-
-          <nav className="flex gap-1 lg:mt-7 lg:flex-col">
-            {NAV.map(({ href, label, icon: Icon }) => {
-              const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${
-                    active
-                      ? "bg-ink-800 font-medium text-white"
-                      : "text-ink-300 hover:bg-ink-850 hover:text-white"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden lg:inline">{label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="hidden space-y-3 p-5 lg:block">
-          <div className="card p-3">
-            <p className="mb-2 text-[11px] font-medium text-ink-400">Network</p>
-            <div className="flex gap-1">
-              {(["devnet", "mainnet-beta"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setNetwork(option)}
-                  className={`flex-1 rounded-md px-2 py-1 text-[11px] font-medium transition ${
-                    network === option
-                      ? option === "devnet"
-                        ? "bg-mint-900 text-mint-400"
-                        : "bg-warn-500/15 text-warn-500"
-                      : "text-ink-400 hover:text-ink-200"
-                  }`}
-                >
-                  {option === "devnet" ? "Devnet" : "Mainnet"}
-                </button>
-              ))}
-            </div>
-            {network === "mainnet-beta" && usingPublicRpc(network) ? (
-              <p className="mt-2 text-[10px] leading-snug text-warn-500">
-                Public RPC — set NEXT_PUBLIC_MAINNET_RPC before launching.
-              </p>
-            ) : null}
-          </div>
-
-          {publicKey ? (
-            <div className="card p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-medium text-ink-400">Wallet</p>
-                {keypair ? (
-                  <span className="text-[10px] text-mint-400">unlocked</span>
-                ) : (
-                  <span className="flex items-center gap-1 text-[10px] text-ink-400">
-                    <LockIcon className="h-2.5 w-2.5" />
-                    locked
-                  </span>
-                )}
-              </div>
-              <p className="mt-1.5 font-mono text-xs text-ink-200">{shortAddress(publicKey, 5)}</p>
-              <p className="mt-0.5 text-[11px] tabular-nums text-ink-400">
-                {balanceSol === null ? "—" : `${balanceSol.toFixed(4)} SOL`}
-              </p>
-            </div>
-          ) : null}
 
           <button
             type="button"
-            onClick={signOut}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-400 transition hover:text-danger-500"
+            onClick={toggle}
+            title={theme === "dark" ? "Switch to paper" : "Switch to dark"}
+            className="border border-rule p-1.5 text-ink-soft transition hover:border-ink hover:text-ink lg:mt-6"
           >
-            <LogOut className="h-3.5 w-3.5" />
-            Sign out
+            {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
           </button>
         </div>
+
+        <nav className="mt-6 flex gap-4 border-t border-rule pt-4 lg:mt-8 lg:flex-col lg:gap-0 lg:pt-5">
+          {NAV.map(({ href, plate, label }) => {
+            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`group flex items-baseline gap-2.5 lg:border-b lg:border-rule lg:py-2.5 ${
+                  active ? "text-ink" : "text-ink-faint hover:text-ink"
+                }`}
+              >
+                <span className="data text-[10px]">{plate}</span>
+                <span
+                  className={`text-[15px] ${active ? "font-semibold" : "font-normal"}`}
+                >
+                  {label}
+                </span>
+                {active ? <span className="ml-auto hidden text-[10px] lg:inline">●</span> : null}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-7 hidden lg:block">
+          <p className="eyebrow mb-2.5">Network</p>
+          <div className="flex border border-rule">
+            {(["devnet", "mainnet-beta"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setNetwork(option)}
+                className={`data flex-1 py-1.5 text-[10px] uppercase tracking-[0.12em] transition ${
+                  network === option
+                    ? "bg-ink text-paper"
+                    : "text-ink-faint hover:text-ink"
+                }`}
+              >
+                {option === "devnet" ? "Test" : "Live"}
+              </button>
+            ))}
+          </div>
+          {network === "mainnet-beta" && usingPublicRpc(network) ? (
+            <p className="mt-2 text-[10.5px] leading-snug text-signal">
+              Public RPC — set a dedicated endpoint before issuing.
+            </p>
+          ) : null}
+        </div>
+
+        {publicKey ? (
+          <dl className="mt-6 hidden space-y-1.5 border-t border-rule pt-4 lg:block">
+            <Datum label="Key">{shortAddress(publicKey, 4)}</Datum>
+            <Datum label="State">{keypair ? "open" : "sealed"}</Datum>
+            <Datum label="SOL">{balanceSol === null ? "—" : balanceSol.toFixed(4)}</Datum>
+          </dl>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={signOut}
+          className="eyebrow mt-6 hidden hover:text-signal lg:block"
+        >
+          Sign out
+        </button>
       </aside>
 
-      <main className="min-w-0 flex-1 p-5 lg:p-8">{children}</main>
+      <main className="min-w-0 flex-1 px-6 py-8 lg:px-12 lg:py-12">
+        <header className="mb-9 border-b-[1.5px] border-[color:var(--rule-hard)] pb-6">
+          <h1 className="display text-[clamp(38px,5.5vw,60px)]">{title}</h1>
+          {standfirst ? <p className="annot mt-3 max-w-[54ch]">{standfirst}</p> : null}
+        </header>
+        {children}
+      </main>
     </div>
   );
 }
